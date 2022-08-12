@@ -1,7 +1,8 @@
 ---@class ParametersData
+---@field index uint
 ---@field player_index uint
 ---@field action string
----@field resource_name string
+---@field resource_names {[uint] : string}
 ---@field resource_limit string
 ---@field event CustomCommandData
 ---@field force_id uint

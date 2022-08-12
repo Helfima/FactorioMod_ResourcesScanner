@@ -12,10 +12,12 @@ local pow_chars =
 }
 
 string.parse_number = function(value)
-    local magnitude = value:sub(-1)
-    -- si pas de magnitude c'est un nombre
-    if tonumber(magnitude) then return tonumber(value) end
-    local multiplier = pow_chars[magnitude]
-    local number = tonumber(value:sub(1, value:len()-1))
-    return  number * multiplier
+  if value == nil or value == "" then error("invalid value!") end
+  if tonumber(value) then return tonumber(value) end
+  local magnitude = value:sub(-1)
+  -- si pas de magnitude c'est un nombre
+  if tonumber(magnitude) then return tonumber(value) end
+  local multiplier = pow_chars[magnitude]
+  local number = tonumber(value:sub(1, value:len()-1))
+  return  number * multiplier
 end

@@ -9,7 +9,7 @@ Surface = require "models.Surface"
 Chunk = require "models.Chunk"
 Patch = require "models.Patch"
 Resource = require "models.Resource"
-Format = require "core.format"
+Format = require "core.Format"
 
 local module = {}
 
@@ -23,7 +23,7 @@ module.on_configuration_changed = function()
 end
 
 module.add_commands= function()
-    commands.add_command("rmm","Resources Map Manager commands", module.command_run)
+    commands.add_command(defines.rs.command.name,defines.rs.command.header, module.command_run)
 end
 
 module.command_run = function(event)
@@ -33,18 +33,37 @@ module.command_run = function(event)
     end
 end
 
+---@param event CustomCommandData
+---@return {action:string, resource_names:string, resource_limit:string}
+module.parse_parameter = function(event)
+    local action, resource_name, resource_limit = string.match(event.parameter, "([^%s]+)[ ]?([^%s]*)[ ]?([^%s]*)")
+    local resource_names = nil
+    if  resource_name ~= defines.rs.default.filter and resource_name ~= "" then
+        local resources = Player.getResourceEntityPrototypes()
+        for _, resource in pairs(resources) do
+            local name = resource.name
+            if string.find(name, resource_name, 1, true) then
+                if resource_names == nil then resource_names = {} end
+                table.insert(resource_names, name)
+            end
+        end
+    end
+    if resource_limit == "" then resource_limit = defines.rs.default.limit end
+    return action, resource_names, resource_limit
+end
 -------------------------------------------------------------------------------
 ---@param event CustomCommandData
 ---@return ParametersData
-function module.get_parameter(event)
+module.get_parameter = function(event)
     local force = Player.getForce()
     local surface = Player.getSurface()
-    local action, resource_name, resource_limit = string.match(event.parameter, "([^%s]+)[ ]?([^%s]*)[ ]?([^%s]*)")
+    local action, resource_names, resource_limit = module.parse_parameter(event)
+    local limit = string.parse_number(resource_limit)
     local parameters = {}
     parameters.player_index = event.player_index
     parameters.action = action
-    parameters.resource_name = resource_name or "all"
-    parameters.resource_limit = resource_limit
+    parameters.resource_names = resource_names
+    parameters.resource_limit = limit
     parameters.event = event
     parameters.force_id = force.index
     parameters.surface_id = surface.index
@@ -67,7 +86,7 @@ end
 ---@param event CustomCommandData
 function module.execute(event)
   local ok , err = pcall(function()
-    if event.name == "rmm" then
+    if event.name == defines.rs.command.name then
         if event.parameter ~= nil then
             local parameters = module.get_parameter(event)
             local response = module.append_queue(parameters)
@@ -111,6 +130,7 @@ module.on_nth_tick[1] = function(event)
     end
 end
 
+---@param parameters ParametersData
 module.run_on_tick = function(parameters)
     local ok , err = pcall(function()
         if parameters == nil then return end
@@ -122,6 +142,10 @@ module.run_on_tick = function(parameters)
             module.action_remove(parameters)
         elseif action == "scan" then
             module.action_scan(parameters)
+        elseif action == "show" then
+            module.action_show(parameters)
+        elseif action == "hide" then
+            module.action_hide(parameters)
         elseif action == "reset" then
             module.action_reset(parameters)
         else
@@ -136,17 +160,68 @@ module.run_on_tick = function(parameters)
     end
 end
 
+---@param parameters ParametersData
 module.action_remove = function(parameters)
     module.clean_tags(parameters)
     parameters.finished = true
 end
 
+---@param parameters ParametersData
 module.action_reset = function(parameters)
     module.clean_tags(parameters)
     global = {}
     parameters.finished = true
 end
 
+---Check match resources names
+---@param resource_names {[uint]:string}
+---@param resource_name string
+---@return boolean
+module.match_resource_names = function(resource_names, resource_name)
+    if resource_names == nil then return true end
+    for _, name in pairs(resource_names) do
+        if resource_name == name then return true end
+    end
+    return false
+end
+
+---@param parameters ParametersData
+module.action_show = function (parameters)
+    local force_id = parameters.force_id
+    local force = game.forces[force_id]
+    local surface_id = parameters.surface_id
+    local surface = game.get_surface(surface_id)
+    local resource_names = parameters.resource_names
+    local resource_limit = parameters.resource_limit
+    local patchs = Surface.get_patchs()
+    for _, patch in pairs(patchs) do
+        if module.match_resource_names(resource_names, patch.name)
+            and (resource_limit == 0 or patch.amount >= resource_limit) then
+            module.update_patch_tag(force, surface, patch)
+        end
+    end
+    parameters.finished = true
+end
+
+---@param parameters ParametersData
+module.action_hide = function (parameters)
+    local force_id = parameters.force_id
+    local force = game.forces[force_id]
+    local surface_id = parameters.surface_id
+    local surface = game.get_surface(surface_id)
+    local resource_names = parameters.resource_names
+    local resource_limit = parameters.resource_limit
+    local patchs = Surface.get_patchs()
+    for _, patch in pairs(patchs) do
+        if module.match_resource_names(resource_names, patch.name)
+            and (resource_limit == 0 or patch.amount <= resource_limit) then
+            module.remove_patch_tag(force, surface, patch)
+        end
+    end
+    parameters.finished = true
+end
+
+---@param parameters ParametersData
 module.action_scan = function(parameters)
     local force_id = parameters.force_id
     local force = game.forces[force_id]
@@ -182,6 +257,7 @@ module.action_scan = function(parameters)
     end
 end
 
+---@param parameters ParametersData
 module.get_chunks = function(parameters)
     local force_id = parameters.force_id
     local force = game.forces[force_id]
@@ -197,12 +273,15 @@ module.get_chunks = function(parameters)
     end
 end
 
+---Scan few chunks
+---@param parameters ParametersData
+---@param step uint
 module.get_chunks_patchs = function(parameters, step)
     local force_id = parameters.force_id
     local force = game.forces[force_id]
     local surface_id = parameters.surface_id
     local surface = game.get_surface(surface_id)
-    local resource_name = parameters.resource_name
+    local resource_names = parameters.resource_names
     local resource_limit = parameters.resource_limit
 
     local index_start = parameters.index
@@ -210,11 +289,11 @@ module.get_chunks_patchs = function(parameters, step)
     for i = index_start, index_end, 1 do
         local chunk = parameters.chunks[i]
         if chunk == nil then break end -- loop finished
-        local patchs = module.get_chunk_patchs(chunk, resource_name, surface, force)
+        local patchs = module.get_chunk_patchs(chunk, surface, force)
         if patchs ~= nil then
-            local limit = string.parse_number(resource_limit)
             for _, patch in pairs(patchs) do
-                if patch.amount >= limit then
+                if module.match_resource_names(resource_names, patch.name)
+                    and (resource_limit == 0 or patch.amount >= resource_limit) then
                     module.update_patch_tag(force, surface, patch)
                 else
                     module.remove_patch_tag(force, surface, patch)
@@ -224,24 +303,18 @@ module.get_chunks_patchs = function(parameters, step)
     end
 end
 
----comment
+---Scan a chunk
 ---@param chunk ChunkData
----@param resource_name string
 ---@param surface LuaSurface
 ---@param force LuaForce
 ---@return {[uint]:PatchData}
-module.get_chunk_patchs = function(chunk, resource_name, surface, force)
+module.get_chunk_patchs = function(chunk, surface, force)
     local patchs = {}
     local area_extended = Chunk.get_area_extended(chunk, 1)
     -- recherche les ressources dans la zone du chunk + delta
     -- si une ressource hors de la zone est déjà dans un patch
     -- l'affectation des patchs à proximité sera automatique
-    local resources = nil
-    if resource_name == "all" then
-        resources = surface.find_entities_filtered({area = area_extended, type = "resource"})
-    else
-        resources = surface.find_entities_filtered({area = area_extended, name = resource_name})
-    end
+    local resources = surface.find_entities_filtered({area = area_extended, type = "resource"})
     if #resources > 0 then
         for key, resource in pairs(resources) do
             local resource_visited = Surface.get_resource(resource)
@@ -331,7 +404,7 @@ end
 ---@param surface LuaSurface
 ---@param patch PatchData
 module.update_patch_tag = function(force, surface, patch)
-    local header = Format.formatNumberKilo(patch.amount)
+    local header = Format.formatNumberKilo(patch.amount, 0)
     local position = Area.get_center(patch.area)
     --header = string.format("%s=>%s", patch.id, header)
     if patch.tag_number then
@@ -360,22 +433,6 @@ module.update_patch_tag = function(force, surface, patch)
         local tag = module.add_tag_chart(force, surface, position, header, icon)
         if tag ~= nil then
             patch.tag_number = tag.tag_number
-        end
-    end
-end
---- add resource tags
-module.resource_patch_tags = function(parameters)
-    local force_id = parameters.force_id
-    local force = game.forces[force_id]
-    local surface_id = parameters.surface_id
-    local surface = game.get_surface(surface_id)
-    local resources_map = parameters.resources_map
-    for _, resource_map in pairs(resources_map) do
-        for key, patch in pairs(resource_map) do
-            local icon = {type=patch.type, name=patch.name}
-            local header = Format.formatNumberKilo(patch.amount)
-            local position = Area.get_center(patch.area)
-            module.add_tag_chart(force, surface, position, header, icon)
         end
     end
 end
@@ -445,8 +502,8 @@ module.on_sector_scanned  = function(event)
     local parameters = {}
     parameters.player_index = player.index
     parameters.action = "scan"
-    parameters.resource_name = "all"
-    parameters.resource_limit = "1k"
+    parameters.resource_name = defines.rs.default.filter
+    parameters.resource_limit = defines.rs.default.limit
     parameters.event = event
     parameters.force_id = force.index
     parameters.surface_id = surface.index

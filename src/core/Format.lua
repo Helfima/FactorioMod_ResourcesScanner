@@ -53,18 +53,19 @@ end
 ---@param value number the number
 ---@param suffix string
 ---@return string --formated number
-function Format.formatNumberKilo(value, suffix)
+function Format.formatNumberKilo(value, decimal, suffix)
+  local diviser = 1 ^ decimal
   if suffix == nil then suffix = "" end
   if value == nil then
     return 0
   elseif value < 1000 then
     return Format.formatNumber(value).." "..suffix
   elseif (value / 1000) < 1000 then
-    return math.ceil(value*10 / 1000)/10 .. " k" ..suffix
+    return math.ceil(value*diviser / 1000)/diviser .. " k" ..suffix
   elseif (value / (1000*1000)) < 1000 then
-    return math.ceil(value*10 / (1000*1000))/10 .. " M" ..suffix
+    return math.ceil(value*diviser / (1000*1000))/diviser .. " M" ..suffix
   else
-    return math.ceil(value*10 / (1000*1000*1000))/10 .. " G" ..suffix
+    return math.ceil(value*diviser / (1000*1000*1000))/diviser .. " G" ..suffix
   end
 end
 

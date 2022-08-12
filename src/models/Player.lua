@@ -75,7 +75,7 @@ end
 
 -------------------------------------------------------------------------------
 ---Return resources list
----@return table
+---@return {[uint] : LuaEntityPrototype}
 function Player.getResourceEntityPrototypes()
     local filters = {{filter = "type", invert = false, mode = "or", type = "resource"}}
     return Player.getEntityPrototypes(filters)
