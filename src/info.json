@@ -1,0 +1,11 @@
+{
+  "name": "ResourcesScanner",
+  "version": "0.1.0",
+  "title": "Resources Scanner",
+  "author": "Helfima",
+  "contact": "",
+  "homepage": "",
+  "description": "Resources Scanner, visualize resources on map.",
+  "dependencies": ["base >= 1.1.0"],
+  "factorio_version": "1.1"
+}
