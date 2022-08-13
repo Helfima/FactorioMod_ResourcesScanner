@@ -1,9 +1,3 @@
-ModGui = require "mod-gui"
-require "core.defines"
-require "core.tableExtends"
-require "core.class"
-require "core.util"
-
 Area = require "models.Area"
 Surface = require "models.Surface"
 Chunk = require "models.Chunk"
@@ -23,7 +17,7 @@ module.on_configuration_changed = function()
 end
 
 module.add_commands= function()
-    commands.add_command(defines.rs.command.name,defines.rs.command.header, module.command_run)
+    commands.add_command(defines.mod.command.name,defines.mod.command.header, module.command_run)
 end
 
 module.command_run = function(event)
@@ -34,12 +28,12 @@ module.command_run = function(event)
 end
 
 ---@param event CustomCommandData
----@return {action:string, resource_names:string, resource_limit:string}
+---@return {action:string, resource_names:table, resource_limit:double}
 module.parse_parameter = function(event)
     local action, resource_name, resource_limit = string.match(event.parameter, "([^%s]+)[ ]?([^%s]*)[ ]?([^%s]*)")
     local resource_names = nil
-    if  resource_name ~= defines.rs.default.filter and resource_name ~= "" then
-        local resources = Player.getResourceEntityPrototypes()
+    if  resource_name ~= defines.mod.default.filter and resource_name ~= "" then
+        local resources = Player.get_resource_entity_prototypes()
         for _, resource in pairs(resources) do
             local name = resource.name
             if string.find(name, resource_name, 1, true) then
@@ -48,15 +42,15 @@ module.parse_parameter = function(event)
             end
         end
     end
-    if resource_limit == "" then resource_limit = defines.rs.default.limit end
+    if resource_limit == "" then resource_limit = defines.mod.default.limit end
     return action, resource_names, resource_limit
 end
 -------------------------------------------------------------------------------
 ---@param event CustomCommandData
 ---@return ParametersData
 module.get_parameter = function(event)
-    local force = Player.getForce()
-    local surface = Player.getSurface()
+    local force = Player.get_force()
+    local surface = Player.get_surface()
     local action, resource_names, resource_limit = module.parse_parameter(event)
     local limit = string.parse_number(resource_limit)
     local parameters = {}
@@ -86,7 +80,7 @@ end
 ---@param event CustomCommandData
 function module.execute(event)
   local ok , err = pcall(function()
-    if event.name == defines.rs.command.name then
+    if event.name == defines.mod.command.name then
         if event.parameter ~= nil then
             local parameters = module.get_parameter(event)
             local response = module.append_queue(parameters)
@@ -135,7 +129,7 @@ module.run_on_tick = function(parameters)
     local ok , err = pcall(function()
         if parameters == nil then return end
         Player.load(parameters)
-        Surface.load(parameters)
+        Surface.load(parameters.force_id, parameters.surface_id)
 
         local action = parameters.action
         if action == "remove" then
@@ -147,7 +141,7 @@ module.run_on_tick = function(parameters)
         elseif action == "hide" then
             module.action_hide(parameters)
         elseif action == "reset" then
-            module.action_reset(parameters)
+            module.action_clean_tags(parameters)
         else
             parameters.finished = true
             Player.printf("Action %s not found!", action)
@@ -162,15 +156,29 @@ end
 
 ---@param parameters ParametersData
 module.action_remove = function(parameters)
-    module.clean_tags(parameters)
+    local force_id = parameters.force_id
+    local force = game.forces[force_id]
+    local surface_id = parameters.surface_id
+    local surface = game.get_surface(surface_id)
+    Surface.clean_patch_tags(force, surface)
     parameters.finished = true
 end
 
 ---@param parameters ParametersData
-module.action_reset = function(parameters)
-    module.clean_tags(parameters)
-    global = {}
-    parameters.finished = true
+module.action_clean_tags = function(parameters)
+    local force_id = parameters.force_id
+    local force = game.forces[force_id]
+    local surface_id = parameters.surface_id
+    local surface = game.get_surface(surface_id)
+    local force_tags = force.find_chart_tags(surface)
+
+    local resource_makups = global["resource_makups"] or {}
+    local force_markups = resource_makups[force.index] or {}
+    for key, tag in pairs(force_tags) do
+        if force_markups[tag.tag_number] then
+            tag.destroy()
+        end
+    end
 end
 
 ---Check match resources names
@@ -197,7 +205,7 @@ module.action_show = function (parameters)
     for _, patch in pairs(patchs) do
         if module.match_resource_names(resource_names, patch.name)
             and (resource_limit == 0 or patch.amount >= resource_limit) then
-            module.update_patch_tag(force, surface, patch)
+                Surface.update_patch_tag(force, surface, patch)
         end
     end
     parameters.finished = true
@@ -215,7 +223,7 @@ module.action_hide = function (parameters)
     for _, patch in pairs(patchs) do
         if module.match_resource_names(resource_names, patch.name)
             and (resource_limit == 0 or patch.amount <= resource_limit) then
-            module.remove_patch_tag(force, surface, patch)
+                Surface.remove_patch_tag(force, surface, patch)
         end
     end
     parameters.finished = true
@@ -226,8 +234,9 @@ module.action_scan = function(parameters)
     local force_id = parameters.force_id
     local force = game.forces[force_id]
     local surface_id = parameters.surface_id
+    local surface = game.get_surface(surface_id)
     if parameters.cleanup == nil then
-        module.clean_tags(parameters)
+        Surface.clean_patch_tags(force, surface)
         parameters.cleanup = true
         return
     end
@@ -294,9 +303,9 @@ module.get_chunks_patchs = function(parameters, step)
             for _, patch in pairs(patchs) do
                 if module.match_resource_names(resource_names, patch.name)
                     and (resource_limit == 0 or patch.amount >= resource_limit) then
-                    module.update_patch_tag(force, surface, patch)
+                    Surface.update_patch_tag(force, surface, patch)
                 else
-                    module.remove_patch_tag(force, surface, patch)
+                    Surface.remove_patch_tag(force, surface, patch)
                 end
             end 
         end
@@ -360,7 +369,7 @@ module.get_chunk_patchs = function(chunk, surface, force)
                                     Patch.merge_patch(merged_patch, patch)
                                     patchs[resource_patch.id] = nil
                                     Surface.remove_patch(patch)
-                                    module.remove_patch_tag(force, surface, patch)
+                                    Surface.remove_patch_tag(force, surface, patch)
                                 end
                             end
                             Patch.add_in_patch(merged_patch, new_resource)
@@ -377,107 +386,6 @@ module.get_chunk_patchs = function(chunk, surface, force)
         end
     end
     return patchs
-end
-
----remove tag
----@param force LuaForce
----@param surface LuaSurface
----@param patch PatchData
-module.remove_patch_tag = function(force, surface, patch)
-    if patch.tag_number == nil then return end
-    local area = patch.area
-    local force_tags = force.find_chart_tags(surface, area)
-    for _, tag in pairs(force_tags) do
-        if tag.tag_number == patch.tag_number then
-            local resource_makups = global["resource_makups"]
-            local force_markups = resource_makups[force.index]
-            force_markups[tag.tag_number] = nil
-            patch.tag_number = nil
-            tag.destroy()
-            break
-        end
-    end
-end
-
----update tag
----@param force LuaForce
----@param surface LuaSurface
----@param patch PatchData
-module.update_patch_tag = function(force, surface, patch)
-    local header = Format.formatNumberKilo(patch.amount, 0)
-    local position = Area.get_center(patch.area)
-    --header = string.format("%s=>%s", patch.id, header)
-    if patch.tag_number then
-        local area = patch.area
-        local force_tags = force.find_chart_tags(surface, area)
-        if force_tags == nil then
-            patch.tag_number = nil
-        else
-            local found = false
-            for _, tag in pairs(force_tags) do
-                if tag.tag_number == patch.tag_number then
-                    found = true
-                    tag.position.x = position.x
-                    tag.position.y = position.y
-                    tag.text = header
-                    break
-                end
-            end
-            if found == false then
-                patch.tag_number = nil
-            end
-        end
-    end
-    if patch.tag_number == nil then
-        local icon = patch.icon
-        local tag = module.add_tag_chart(force, surface, position, header, icon)
-        if tag ~= nil then
-            patch.tag_number = tag.tag_number
-        end
-    end
-end
-
-module.clean_tags = function(parameters)
-    local force_id = parameters.force_id
-    local force = game.forces[force_id]
-    local surface_id = parameters.surface_id
-    local surface = game.get_surface(surface_id)
-    local force_tags = force.find_chart_tags(surface)
-    
-    local resource_makups = global["resource_makups"]
-    if resource_makups == nil then return end
-    
-    local force_markups = resource_makups[force.index]
-    if force_markups == nil then return end
-    
-    for key, tag in pairs(force_tags) do
-        if force_markups[tag.tag_number] then
-            tag.destroy()
-        end
-    end
-end
-
-module.add_tag_chart = function (force, surface, position, header, icon )
-    local tag = {
-        position = position,
-		text = header,
-		icon = icon,
-    }
-    local new_tag = force.add_chart_tag(surface, tag)
-    if new_tag ~= nil then
-        global["resource_makups"] = global["resource_makups"] or {}
-        global["resource_makups"][force.index] = global["resource_makups"][force.index] or {}
-        global["resource_makups"][force.index][new_tag.tag_number] = true
-    end
-    return new_tag
-end
-
-module.on_lua_shortcut  = function(event)
-    -- if event.player_index ~= nil then
-    --     local lua_player = game.players[event.player_index]
-    --     local passenger_schedule_enable = lua_player.is_shortcut_toggled(defines.events.on_passenger_schedule_enable)
-    --     lua_player.set_shortcut_toggled(defines.events.on_passenger_schedule_enable, not(passenger_schedule_enable))
-    -- end
 end
 
 ---Called when a resource entity reaches 0 or its minimum yield for infinite resources.
@@ -502,8 +410,8 @@ module.on_sector_scanned  = function(event)
     local parameters = {}
     parameters.player_index = player.index
     parameters.action = "scan"
-    parameters.resource_name = defines.rs.default.filter
-    parameters.resource_limit = defines.rs.default.limit
+    parameters.resource_name = defines.mod.default.filter
+    parameters.resource_limit = defines.mod.default.limit
     parameters.event = event
     parameters.force_id = force.index
     parameters.surface_id = surface.index
@@ -514,8 +422,6 @@ end
 
 module.events =
 {
-    [defines.events.on_lua_shortcut] = module.on_lua_shortcut,
-    [defines.events.on_console_command] = module.on_console_command,
     [defines.events.on_resource_depleted] = module.on_resource_depleted,
     --[defines.events.on_sector_scanned] = module.on_sector_scanned
 }

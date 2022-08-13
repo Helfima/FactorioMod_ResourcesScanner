@@ -1,0 +1,44 @@
+local module = {}
+
+-- module.add_menu = function(event)
+--     local lua_player = game.players[event.player_index]
+--     local gui_anchor = {
+--         gui = defines.relative_gui_type.,
+--         position = defines.relative_gui_position.left
+--     }
+--     local lua_gui = lua_player.gui[defines.gui.frame.location]
+--     for _, children_name in pairs(lua_gui.children_names) do
+--         if lua_gui[children_name] ~= nil and lua_gui[children_name].get_mod() == "TrainScheduleSignals" then
+--             lua_gui[children_name].destroy()
+--         end
+--     end
+--     if lua_gui[defines.gui.frame.name] == nil then
+--         local gui_frame = lua_gui.add({
+--             name = defines.gui.frame.name,
+--             style = defines.gui.styles.frame,
+--             type = "frame",
+--             caption = { "captions.tss-frame-rename-options" },
+--             anchor = gui_anchor,
+--         })
+--         local gui_inner = gui_frame.add({
+--             name = "inner",
+--             style = defines.gui.styles.inner,
+--             type = "frame",
+--             direction = "vertical"
+--         })
+--         local label = gui_inner.add({
+--             type = "label",
+--             caption = { "captions.tss-rename-all-stations" },
+--             style = defines.gui.styles.label,
+--         })
+--         local state = module.get_option(lua_player, defines.options.rename_all_stations,
+--             defines.gui.checkbox.rename_all_stations_default)
+--         local checkbox = gui_inner.add({
+--             type = "checkbox",
+--             name = defines.gui.checkbox.rename_all_stations,
+--             caption = { "gui-control-behavior-modes.enable-disable" },
+--             state = state,
+--         })
+--     end
+-- end
+return module

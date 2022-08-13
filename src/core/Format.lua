@@ -10,7 +10,7 @@ local Format = {
 ---Format the number
 ---@param n number the number
 ---@param decimal number
----@return number --formated number
+---@return string --formated number
 function Format.formatNumber(n, decimal)
   local separator = " "
   if n == nil then return 0 end
@@ -66,6 +66,28 @@ function Format.formatNumberKilo(value, decimal, suffix)
     return math.ceil(value*diviser / (1000*1000))/diviser .. " M" ..suffix
   else
     return math.ceil(value*diviser / (1000*1000*1000))/diviser .. " G" ..suffix
+  end
+end
+
+-------------------------------------------------------------------------------
+---Format the number
+---@param value number the number
+---@param suffix string
+---@return string --formated number
+function Format.floorNumberKilo(value, decimal, suffix)
+  if decimal == nil then decimal = 0 end
+  local diviser = 10 ^ decimal
+  if suffix == nil then suffix = "" end
+  if value == nil then
+    return 0
+  elseif value < 1000 then
+    return Format.formatNumber(value).." "..suffix
+  elseif (value / 1000) < 1000 then
+    return math.floor(value / 1000) .. " k" ..suffix
+  elseif (value / (1000*1000)) < 1000 then
+    return math.floor(value*diviser / (1000*1000))/diviser .. " M" ..suffix
+  else
+    return math.floor(value*diviser / (1000*1000*1000))/diviser .. " G" ..suffix
   end
 end
 

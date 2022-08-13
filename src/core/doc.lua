@@ -1,3 +1,11 @@
+---@class EventModData : EventData
+---@field player_index uint
+---@field element LuaGuiElement
+---@field classname string
+---@field action string
+---@field item1 string
+---@field item2 string
+
 ---@class ParametersData
 ---@field index uint
 ---@field player_index uint
@@ -23,6 +31,7 @@
 ---@field amount uint
 ---@field area BoundingBox
 ---@field resources {[uint] : ResourceData}
+---@field tag_number uint
 
 ---@class ChunkData : ChunkPositionAndArea
 ---@field patchs table
@@ -35,3 +44,14 @@
 ---@field resources {[string] : ResourceData}
 ---@field patchs {[uint] : PatchData}
 ---@field patch_id uint
+---@field markers {[uint] : boolean}
+---@field settings {[string] : {limit:uint, show:boolean}}
+
+---Definition of class base
+---@class newclass
+local newclass = {
+    ---Initialize
+    ---@param base newclass
+    ---@param param any
+    init=function(base, param)end,
+}

@@ -60,4 +60,9 @@ Resource.get_icon = function(resource)
     return icon
 end
 
+Resource.get_icon_string = function(resource)
+    local icon = Resource.get_icon(resource)
+    return string.format("[%s=%s]", icon.type, icon.name)
+end
+
 return Resource
