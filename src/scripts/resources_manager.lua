@@ -129,7 +129,7 @@ module.run_on_tick = function(parameters)
     local ok , err = pcall(function()
         if parameters == nil then return end
         Player.load(parameters)
-        Surface.load(parameters.force_id, parameters.surface_id)
+        Surface.load(parameters.surface_id)
 
         local action = parameters.action
         if action == "remove" then
@@ -141,7 +141,7 @@ module.run_on_tick = function(parameters)
         elseif action == "hide" then
             module.action_hide(parameters)
         elseif action == "reset" then
-            module.action_clean_tags(parameters)
+            module.action_reset(parameters)
         else
             parameters.finished = true
             Player.printf("Action %s not found!", action)
@@ -160,25 +160,18 @@ module.action_remove = function(parameters)
     local force = game.forces[force_id]
     local surface_id = parameters.surface_id
     local surface = game.get_surface(surface_id)
-    Surface.clean_patch_tags(force, surface)
+    Surface.remove_patch_tags(force, surface)
     parameters.finished = true
 end
 
 ---@param parameters ParametersData
-module.action_clean_tags = function(parameters)
+module.action_reset = function(parameters)
     local force_id = parameters.force_id
     local force = game.forces[force_id]
     local surface_id = parameters.surface_id
     local surface = game.get_surface(surface_id)
-    local force_tags = force.find_chart_tags(surface)
-
-    local resource_makups = global["resource_makups"] or {}
-    local force_markups = resource_makups[force.index] or {}
-    for key, tag in pairs(force_tags) do
-        if force_markups[tag.tag_number] then
-            tag.destroy()
-        end
-    end
+    Surface.destroy(force, surface)
+    parameters.finished = true
 end
 
 ---Check match resources names
@@ -236,7 +229,7 @@ module.action_scan = function(parameters)
     local surface_id = parameters.surface_id
     local surface = game.get_surface(surface_id)
     if parameters.cleanup == nil then
-        Surface.clean_patch_tags(force, surface)
+        Surface.remove_patch_tags(force, surface)
         parameters.cleanup = true
         return
     end
@@ -298,99 +291,50 @@ module.get_chunks_patchs = function(parameters, step)
     for i = index_start, index_end, 1 do
         local chunk = parameters.chunks[i]
         if chunk == nil then break end -- loop finished
-        local patchs = module.get_chunk_patchs(chunk, surface, force)
-        if patchs ~= nil then
-            for _, patch in pairs(patchs) do
-                if module.match_resource_names(resource_names, patch.name)
-                    and (resource_limit == 0 or patch.amount >= resource_limit) then
-                    Surface.update_patch_tag(force, surface, patch)
-                else
-                    Surface.remove_patch_tag(force, surface, patch)
-                end
-            end 
-        end
+        local patchs = Chunk.get_chunk_patchs(chunk, surface)
+        -- if patchs ~= nil then
+        --     for _, patch in pairs(patchs) do
+        --         if module.match_resource_names(resource_names, patch.name)
+        --             and (resource_limit == 0 or patch.amount >= resource_limit) then
+        --             Surface.update_patch_tag(force, surface, patch)
+        --         else
+        --             Surface.remove_patch_tag(force, surface, patch)
+        --         end
+        --     end 
+        -- end
     end
 end
 
----Scan a chunk
+---Chunk analyse
 ---@param chunk ChunkData
 ---@param surface LuaSurface
----@param force LuaForce
----@return {[uint]:PatchData}
-module.get_chunk_patchs = function(chunk, surface, force)
-    local patchs = {}
-    local area_extended = Chunk.get_area_extended(chunk, 1)
-    -- recherche les ressources dans la zone du chunk + delta
-    -- si une ressource hors de la zone est déjà dans un patch
-    -- l'affectation des patchs à proximité sera automatique
-    local resources = surface.find_entities_filtered({area = area_extended, type = "resource"})
-    if #resources > 0 then
-        for key, resource in pairs(resources) do
-            local resource_visited = Surface.get_resource(resource)
-            if resource_visited == nil then
-                -- ressource non visité
-                if Chunk.is_resource_in_area(chunk, resource) == true then
-                    -- ne prend pas en compte les ressources hors du chunk
-                    local resource_patchs = nil
-                    local marging = 1
-                    local type = Resource.get_product_type(resource)
-                    if type == "fluid" then
-                        marging = 20
-                    end
-                    for _, patch in pairs(patchs) do
-                        if Patch.is_in_patch(patch, resource, marging) then
-                            -- ajoute le patch si la resource est son area
-                            if resource_patchs == nil then resource_patchs = {} end
-                            table.insert(resource_patchs, patch)
-                        end
-                    end
-                    -- creation de la ressource
-                    local new_resource = Resource.create(resource)
-                    if resource_patchs == nil then
-                        -- creation d'un patch
-                        local new_patch = Patch.create(resource)
-                        Patch.add_in_patch(new_patch, new_resource)
-                        patchs[new_patch.id] = new_patch
-                    else
-                        -- au moins un patch trouvé
-                        if #resource_patchs == 1 then
-                            -- patch unique
-                            local patch = resource_patchs[1]
-                            Patch.add_in_patch(patch, new_resource)
-                        else
-                            -- plusieurs patch, il faut merger les patchs
-                            ---@type PatchData
-                            local merged_patch = nil
-                            for _, resource_patch in pairs(resource_patchs) do
-                                local patch = patchs[resource_patch.id]
-                                if merged_patch == nil then
-                                    merged_patch = patch
-                                else
-                                    Patch.merge_patch(merged_patch, patch)
-                                    patchs[resource_patch.id] = nil
-                                    Surface.remove_patch(patch)
-                                    Surface.remove_patch_tag(force, surface, patch)
-                                end
-                            end
-                            Patch.add_in_patch(merged_patch, new_resource)
-                        end
-                    end
-                end
-            else
-                -- ressource visité
-                local patch = Surface.get_patch(resource_visited.patch_id)
-                if patchs[patch.id] == nil then
-                    patchs[patch.id] = patch
-                end
-            end
-        end
-    end
-    return patchs
+module.chunk_analyse = function(chunk, surface)
+    local patchs = Chunk.get_chunk_patchs(chunk, surface)
+    
 end
 
 ---Called when a resource entity reaches 0 or its minimum yield for infinite resources.
 ---@param event EventData.on_resource_depleted
 module.on_resource_depleted  = function(event)
+    local ok, err = pcall(function()
+    end)
+    if not (ok) then
+        Player.print(err)
+        log(err)
+    end
+end
+
+---Called when a chunk is generated.
+---@param event EventData.on_chunk_generated
+module.on_chunk_generated  = function(event)
+    local ok, err = pcall(function()
+        local chunk = Chunk.get_chunk_data(event.position)
+        --module.chunk_analyse(chunk, event.surface)
+    end)
+    if not (ok) then
+        Player.print(err)
+        log(err)
+    end
 end
 
 ---Called when an entity of type radar finishes scanning a sector. Can be filtered for the radar using LuaSectorScannedEventFilter.
@@ -422,8 +366,9 @@ end
 
 module.events =
 {
-    [defines.events.on_resource_depleted] = module.on_resource_depleted,
+    --[defines.events.on_resource_depleted] = module.on_resource_depleted,
     --[defines.events.on_sector_scanned] = module.on_sector_scanned
+    [defines.events.on_chunk_generated] = module.on_chunk_generated
 }
 
 return module

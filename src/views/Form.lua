@@ -75,7 +75,29 @@ function Form:get_panel()
     
     local inner = GuiFrameV(inner_name):style(defines.mod.styles.inner)
     local gui_inner = GuiElement.add(gui_frame, inner)
+    gui_inner.style.horizontally_stretchable = true
+    gui_inner.style.vertically_stretchable = true
     return gui_inner
+end
+
+-------------------------------------------------------------------------------
+---Get or create flow panel
+---@param panel_name string
+---@param direction string
+---@return LuaGuiElement
+function Form:get_flow_panel(panel_name, direction)
+  local content_panel = self:get_panel()
+  if content_panel[panel_name] ~= nil and content_panel[panel_name].valid then
+    return content_panel[panel_name]
+  end
+  local frame_panel = nil
+  if direction == "horizontal" then
+    frame_panel = GuiElement.add(content_panel, GuiFlowH(panel_name))
+  else
+    frame_panel = GuiElement.add(content_panel, GuiFlowV(panel_name))
+  end
+  frame_panel.style.horizontally_stretchable = true
+  return frame_panel
 end
 
 -------------------------------------------------------------------------------

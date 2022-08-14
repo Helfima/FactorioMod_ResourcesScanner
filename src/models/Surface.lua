@@ -6,21 +6,40 @@ local Surface = {
   classname = "HMSurface"
 }
 
----@type CacheResources
+---@type ResourceData
 local cache_surface = nil
 
 ---load
----@param force_id uint
 ---@param surface_id uint
----@return CacheResources
-Surface.load = function (force_id, surface_id)
+---@return ResourceData
+Surface.load = function (surface_id)
     local cache_surfaces = Cache.getData(Surface.classname, "surfaces")
     if cache_surfaces == nil then cache_surfaces = Cache.setData(Surface.classname, "surfaces", {}) end
     if cache_surfaces[surface_id] == nil then cache_surfaces[surface_id] = {} end
-    local cache_forces = cache_surfaces[surface_id]
-    if cache_forces[force_id] == nil then cache_forces[force_id] = {} end
-    cache_surface = cache_forces[force_id]
+    cache_surface = cache_surfaces[surface_id]
     return cache_surface
+end
+
+---Get resource names from cache
+---@return {[string] : boolean}
+Surface.get_resource_names = function ()
+    if cache_surface.resource_names == nil then cache_surface.resource_names = {} end
+    return cache_surface.resource_names
+end
+
+---Add resource name into cache
+---@param resource_name string
+Surface.add_resource_name = function (resource_name)
+    local resource_names = Surface.get_resource_names()
+    resource_names[resource_name] = true
+end
+
+---Add resource name into cache
+---@param resource_name string
+---@return boolean
+Surface.get_resource_name = function (resource_name)
+    local resource_names = Surface.get_resource_names()
+    return resource_names[resource_name]
 end
 
 ---Get ressosurces
@@ -45,6 +64,7 @@ Surface.add_resource = function (resource)
     local resources = Surface.get_resources();
     local key = Resource.get_key(resource)
     resources[key] = resource
+    Surface.add_resource_name(resource.name)
 end
 
 ---Get Patchs
@@ -84,47 +104,72 @@ Surface.remove_patch = function (patch)
     patchs[patch.id] = nil
 end
 
+---Get force data
+---@return {[uint] : ForceData}
+Surface.get_force_datas = function()
+    if cache_surface.forces == nil then cache_surface.forces = {} end
+    return cache_surface.forces
+end
+
+---Get force data
+---@param force LuaForce
+---@return ForceData
+Surface.get_force_data = function(force)
+    local force_datas = Surface.get_force_datas()
+    if force_datas[force.index] == nil then force_datas[force.index] = {} end
+    return force_datas[force.index]
+end
+
 ---Get markers
----@return { [uint]: boolean }
-Surface.get_markers = function()
-    if cache_surface.markers == nil then cache_surface.markers = {} end
-    return cache_surface.markers
+---@param force LuaForce
+---@return { [uint]: ForceMarkerData }
+Surface.get_markers = function(force)
+    local force_data = Surface.get_force_data(force)
+    if force_data.markers == nil then force_data.markers = {} end
+    return force_data.markers
 end
 
 ---Get marker from cache
+---@param force LuaForce
 ---@param tag_number uint
----@return boolean
-Surface.get_marker = function (tag_number)
-    local markers = Surface.get_markers();
+---@return ForceMarkerData
+Surface.get_marker = function (force, tag_number)
+    local markers = Surface.get_markers(force)
     return markers[tag_number]
 end
 
 ---Add a marker into cache
+---@param force LuaForce
 ---@param tag_number uint
-Surface.add_marker = function (tag_number)
-    local markers = Surface.get_markers();
-    markers[tag_number] = true
+---@param patch_id uint
+Surface.add_marker = function (force, tag_number, patch_id)
+    local markers = Surface.get_markers(force);
+    markers[tag_number] = {tag_number=tag_number, patch_id=patch_id}
 end
 
 ---Remove a marker from cache
+---@param force LuaForce
 ---@param tag_number uint
-Surface.remove_marker = function (tag_number)
-    local markers = Surface.get_markers();
+Surface.remove_marker = function (force, tag_number)
+    local markers = Surface.get_markers(force);
     markers[tag_number] = nil
 end
 
 ---Get settings
----@return {[string] : {limit:uint, show:boolean}}
-Surface.get_settings = function()
-    if cache_surface.settings == nil then cache_surface.settings = {} end
-    return cache_surface.settings
+---@param force LuaForce
+---@return {[string] : ForceSettingData}
+Surface.get_settings = function(force)
+    local force_data = Surface.get_force_data(force)
+    if force_data.settings == nil then force_data.settings = {} end
+    return force_data.settings
 end
 
 ---Get setting
+---@param force LuaForce
 ---@param resource_name string
----@return {limit:uint, show:boolean}
-Surface.get_setting = function (resource_name)
-    local settings = Surface.get_settings();
+---@return ForceSettingData
+Surface.get_setting = function (force, resource_name)
+    local settings = Surface.get_settings(force);
     if settings[resource_name] == nil then
         settings[resource_name] = {
             limit=10*1000,
@@ -135,12 +180,13 @@ Surface.get_setting = function (resource_name)
 end
 
 ---Set setting
+---@param force LuaForce
 ---@param resource_name string
 ---@param limit uint
 ---@param show boolean
 ---@return {limit:uint, show:boolean}
-Surface.set_setting = function (resource_name, limit, show)
-    local settings = Surface.get_settings();
+Surface.set_setting = function (force, resource_name, limit, show)
+    local settings = Surface.get_settings(force);
     local setting = {limit=limit, show=show}
     settings[resource_name] = setting
     return setting
@@ -151,7 +197,7 @@ end
 ---@param surface LuaSurface
 ---@param patch PatchData
 Surface.update_patch_tag = function(force, surface, patch)
-    local header = Format.floorNumberKilo(patch.amount, 0)
+    local header = Format.floorNumberKilo(patch.amount, 1)
     local position = Area.get_center(patch.area)
     --header = string.format("%s=>%s", patch.id, header)
     if patch.tag_number then
@@ -177,24 +223,35 @@ Surface.update_patch_tag = function(force, surface, patch)
     end
     if patch.tag_number == nil then
         local icon = patch.icon
-        local tag = Surface.add_patch_tag(force, surface, position, header, icon)
+        local tag = Surface.add_patch_tag(force, surface, patch, position, header, icon)
         if tag ~= nil then
             patch.tag_number = tag.tag_number
         end
     end
 end
 
-Surface.clean_patch_tags = function(force, surface)
+---Remove all force tags
+---@param force LuaForce
+---@param surface LuaSurface
+Surface.remove_patch_tags = function(force, surface)
     local force_tags = force.find_chart_tags(surface)
     for key, tag in pairs(force_tags) do
-        if Surface.get_marker(tag.tag_number) then
-            Surface.remove_marker(tag.tag_number)
+        if Surface.get_marker(force, tag.tag_number) then
+            Surface.remove_marker(force, tag.tag_number)
             tag.destroy()
         end
     end
 end
 
-Surface.add_patch_tag = function (force, surface, position, header, icon )
+---Add patch tag on map
+---@param force LuaForce
+---@param surface LuaSurface
+---@param patch PatchData
+---@param position MapPosition
+---@param header string
+---@param icon {name:string, type:string}
+---@return LuaCustomChartTag|nil
+Surface.add_patch_tag = function (force, surface, patch, position, header, icon )
     local tag = {
         position = position,
 		text = header,
@@ -202,7 +259,7 @@ Surface.add_patch_tag = function (force, surface, position, header, icon )
     }
     local new_tag = force.add_chart_tag(surface, tag)
     if new_tag ~= nil then
-        Surface.add_marker(new_tag.tag_number)
+        Surface.add_marker(force, new_tag.tag_number, patch.id)
     end
     return new_tag
 end
@@ -218,7 +275,7 @@ Surface.remove_patch_tag = function(force, surface, patch)
     for _, tag in pairs(force_tags) do
         if tag.tag_number == patch.tag_number then
             patch.tag_number = nil
-            Surface.remove_marker(tag.tag_number)
+            Surface.remove_marker(force, tag.tag_number)
             tag.destroy()
             break
         end
@@ -230,7 +287,7 @@ end
 Surface.update_markers = function(force, surface)
     local patchs = Surface.get_patchs()
     for _, patch in pairs(patchs) do
-        local setting = Surface.get_setting(patch.name)
+        local setting = Surface.get_setting(force, patch.name)
         if setting.show == true and patch.amount >= setting.limit then
             Surface.update_patch_tag(force, surface, patch)
         else
@@ -238,4 +295,14 @@ Surface.update_markers = function(force, surface)
         end
     end
 end
+
+---Destroys tags and data
+---@param force LuaForce
+---@param surface LuaSurface
+Surface.destroy = function(force, surface)
+    Surface.remove_patch_tags(force, surface)
+    local cache_surfaces = Cache.getData(Surface.classname, "surfaces")
+    cache_surfaces[surface.index] = nil
+end
+
 return Surface

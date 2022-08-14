@@ -30,22 +30,40 @@
 ---@field icon {name:string, type:string}
 ---@field amount uint
 ---@field area BoundingBox
+---Dictionnary {[resource.key] : ResourceData}
 ---@field resources {[uint] : ResourceData}
----@field tag_number uint
 
 ---@class ChunkData : ChunkPositionAndArea
 ---@field patchs table
 
----@class CacheData
---- Dictionnary {[surface.index] : {[force.index] : CacheResources}}
----@field surfaces {[uint] : {[uint] : CacheResources}}
+---@class ForceSettingData
+---@field limit uint
+---@field show boolean
 
----@class CacheResources
+---@class ForceMarkerData
+---@field tag_number uint
+---@field patch_id uint
+
+---@class ForceData
+---Dictionnary {[tag.tag_number] : ForceMarkerData}
+---@field markers {[uint] : ForceMarkerData}
+---Dictionnary {[resource.key] : ForceSettingData}
+---@field settings {[string] : ForceSettingData}
+
+---@class SurfaceData
+---Dictionnary {[resource.key] : ResourceData}
 ---@field resources {[string] : ResourceData}
+---Dictionnary {[resource.name] : boolean}
+---@field resource_names {[string] : boolean}
+---Dictionnary {[path.id] : PatchData}
 ---@field patchs {[uint] : PatchData}
 ---@field patch_id uint
----@field markers {[uint] : boolean}
----@field settings {[string] : {limit:uint, show:boolean}}
+---Dictionnary {[force.index] : ForceData}
+---@field forces {[uint] : ForceData}
+
+---@class CacheData
+---Dictionnary {[surface.index] : SurfaceData}
+---@field surfaces {[uint] : SurfaceData}
 
 ---Definition of class base
 ---@class newclass
