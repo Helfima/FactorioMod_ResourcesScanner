@@ -1,4 +1,4 @@
-EntityPrototype = require("models.EntityPrototype")
+
 -------------------------------------------------------------------------------
 ---Class to build rule edition dialog
 ---@class MapOptionsView : Form
@@ -57,14 +57,14 @@ function MapOptionsView:on_event(event)
 end
 
 function MapOptionsView:update_resources()
-  local panel = self:get_panel()
+  local flow_panel, content_panel, menu_panel = self:get_panel()
   local force = Player.get_force()
   local surface = Player.get_surface()
   Surface.load(surface.index)
   local resource_names = Surface.get_resource_names()
 
   if table.size(resource_names) > 0 then
-    if panel["scroll"] then return end
+    if content_panel["scroll"] then return end
     local scroll = self:get_scroll_panel("scroll")
     local list_panel = GuiElement.add(scroll, GuiTable("list"):column(3))
     GuiElement.add(list_panel,
@@ -92,7 +92,7 @@ function MapOptionsView:update_resources()
       end
     end
   else
-    if panel["scan"] then return end
+    if content_panel["scan"] then return end
     local scan_panel = self:get_flow_panel("scan", "vertical")
     local button = GuiElement.add(scan_panel,
       GuiButton(self.classname, "scan-map"):caption("Scan map"))

@@ -103,4 +103,32 @@ function table.down_indexed_list(list, index, step)
     if list == nil then return 0 end
     return table_size(list)
   end
-    
+  
+-------------------------------------------------------------------------------
+---Convert info table with type for element
+---@param list table
+---@return table
+function table.data_help(list)
+  local result = {}
+  return result
+end
+
+-------------------------------------------------------------------------------
+---Convert info table with type for element
+---@param list table
+---@return table
+function table.data_info(list)
+  if type(list) == 'table' and type(list.__self) == 'userdata' and list.object_name then
+    local result = {}
+    for k, v in pairs(table.data_help(list)) do
+      list[k] = {value=v,type=type(v)}
+    end
+    return result
+  elseif type(list) == 'table' then
+    local result = {}
+    for k, v in pairs(list) do
+      result[k] = {value=v,type=type(v)}
+    end
+    return result
+  end
+end

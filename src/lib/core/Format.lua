@@ -1,9 +1,9 @@
 ---
 ---Description of the module.
 ---@class Format
-local Format = {
+Format = {
   ---single-line comment
-  classname = "HMFormat"
+  classname = "LibFormat"
 }
 
 -------------------------------------------------------------------------------
@@ -125,4 +125,3 @@ function Format.formatNumberElement(number)
   if format_number == "0.00" then decimal = 2 end
   return Format.formatNumber(number, decimal)
 end
-return Format

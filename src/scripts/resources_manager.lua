@@ -1,9 +1,5 @@
-Area = require "models.Area"
-Surface = require "models.Surface"
-Chunk = require "models.Chunk"
 Patch = require "models.Patch"
-Resource = require "models.Resource"
-Format = require "core.Format"
+Surface = require "models.Surface"
 
 local module = {}
 
@@ -291,25 +287,89 @@ module.get_chunks_patchs = function(parameters, step)
     for i = index_start, index_end, 1 do
         local chunk = parameters.chunks[i]
         if chunk == nil then break end -- loop finished
-        local patchs = Chunk.get_chunk_patchs(chunk, surface)
-        -- if patchs ~= nil then
-        --     for _, patch in pairs(patchs) do
-        --         if module.match_resource_names(resource_names, patch.name)
-        --             and (resource_limit == 0 or patch.amount >= resource_limit) then
-        --             Surface.update_patch_tag(force, surface, patch)
-        --         else
-        --             Surface.remove_patch_tag(force, surface, patch)
-        --         end
-        --     end 
-        -- end
+        local patchs = module.get_chunk_patchs(chunk, surface)
     end
+end
+
+---Scan a chunk
+---@param chunk ChunkData
+---@param surface LuaSurface
+---@return {[uint]:PatchData}
+module.get_chunk_patchs = function(chunk, surface)
+    local patchs = {}
+    local area_extended = Chunk.get_area_extended(chunk, 1)
+    -- recherche les ressources dans la zone du chunk + delta
+    -- si une ressource hors de la zone est déjà dans un patch
+    -- l'affectation des patchs à proximité sera automatique
+    local resources = surface.find_entities_filtered({area = area_extended, type = "resource"})
+    if #resources > 0 then
+        for key, resource in pairs(resources) do
+            local resource_visited = Surface.get_resource(resource)
+            if resource_visited == nil then
+                -- ressource non visité
+                if Chunk.is_resource_in_area(chunk, resource) == true then
+                    -- ne prend pas en compte les ressources hors du chunk
+                    local resource_patchs = nil
+                    local marging = 1
+                    local type = Resource.get_product_type(resource)
+                    if type == "fluid" then
+                        marging = 20
+                    end
+                    for _, patch in pairs(patchs) do
+                        if Patch.is_in_patch(patch, resource, marging) then
+                            -- ajoute le patch si la resource est son area
+                            if resource_patchs == nil then resource_patchs = {} end
+                            table.insert(resource_patchs, patch)
+                        end
+                    end
+                    -- creation de la ressource
+                    local new_resource = Resource.create(resource)
+                    if resource_patchs == nil then
+                        -- creation d'un patch
+                        local new_patch = Patch.create(resource)
+                        Patch.add_in_patch(new_patch, new_resource)
+                        patchs[new_patch.id] = new_patch
+                    else
+                        -- au moins un patch trouvé
+                        if #resource_patchs == 1 then
+                            -- patch unique
+                            local patch = resource_patchs[1]
+                            Patch.add_in_patch(patch, new_resource)
+                        else
+                            -- plusieurs patch, il faut merger les patchs
+                            ---@type PatchData
+                            local merged_patch = nil
+                            for _, resource_patch in pairs(resource_patchs) do
+                                local patch = patchs[resource_patch.id]
+                                if merged_patch == nil then
+                                    merged_patch = patch
+                                else
+                                    Patch.merge_patch(merged_patch, patch)
+                                    patchs[resource_patch.id] = nil
+                                    Surface.remove_patch(patch)
+                                end
+                            end
+                            Patch.add_in_patch(merged_patch, new_resource)
+                        end
+                    end
+                end
+            else
+                -- ressource visité
+                local patch = Surface.get_patch(resource_visited.patch_id)
+                if patchs[patch.id] == nil then
+                    patchs[patch.id] = patch
+                end
+            end
+        end
+    end
+    return patchs
 end
 
 ---Chunk analyse
 ---@param chunk ChunkData
 ---@param surface LuaSurface
 module.chunk_analyse = function(chunk, surface)
-    local patchs = Chunk.get_chunk_patchs(chunk, surface)
+    local patchs = module.get_chunk_patchs(chunk, surface)
     
 end
 
@@ -328,8 +388,26 @@ end
 ---@param event EventData.on_chunk_generated
 module.on_chunk_generated  = function(event)
     local ok, err = pcall(function()
-        local chunk = Chunk.get_chunk_data(event.position)
-        --module.chunk_analyse(chunk, event.surface)
+        local chunk = module.get_chunk_data(event.position)
+        module.chunk_analyse(chunk, event.surface)
+        --module.debug_chunk_tag(chunk, event.surface)
+        --module.debug_chunk_message(chunk, event.surface)
+    end)
+    if not (ok) then
+        Player.print(err)
+        log(err)
+    end
+end
+
+---Called when a chunk is generated.
+---@param event EventData.on_chunk_charted
+module.on_chunk_charted  = function(event)
+    local ok, err = pcall(function()
+        local chunk = module.get_chunk_data(event.position)
+        local surface = game.get_surface(event.surface_index)
+        module.chunk_analyse(chunk, surface)
+        module.debug_chunk_tag(chunk, surface)
+        --module.debug_chunk_message(chunk, event.surface)
     end)
     if not (ok) then
         Player.print(err)
@@ -364,11 +442,29 @@ module.on_sector_scanned  = function(event)
     module.append_queue(parameters)
 end
 
+---@param chunk ChunkData
+---@param surface LuaSurface
+module.debug_chunk_tag  = function(chunk, surface)
+    local force = game.forces[1]
+    local position = Chunk.get_map_position(chunk)
+    local tag = {
+        position = position,
+		text = string.format("%s,%s", chunk.x, chunk.y),
+    }
+    force.add_chart_tag(surface, tag)
+end
+
+module.debug_chunk_message  = function(chunk, surface)
+    local force = game.forces[1]
+    force.print(string.format("chunk:%s,%s surface:%s", chunk.x, chunk.y, surface.name))
+end
+
 module.events =
 {
     --[defines.events.on_resource_depleted] = module.on_resource_depleted,
     --[defines.events.on_sector_scanned] = module.on_sector_scanned
-    [defines.events.on_chunk_generated] = module.on_chunk_generated
+    [defines.events.on_chunk_generated] = module.on_chunk_generated,
+    [defines.events.on_chunk_charted] = module.on_chunk_charted,
 }
 
 return module

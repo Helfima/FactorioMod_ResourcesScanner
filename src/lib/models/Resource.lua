@@ -2,7 +2,7 @@
 ---@class Resource
 local Resource = {
   ---single-line comment
-  classname = "HMCache"
+  classname = "LibResource"
 }
 
 ---get resource key

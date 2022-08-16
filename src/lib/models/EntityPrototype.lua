@@ -3,7 +3,7 @@
 ---@class EntityPrototype
 local EntityPrototype = {
   ---single-line comment
-  classname = "HMEntityPrototype"
+  classname = "LibEntityPrototype"
 }
 
 ---get entity key

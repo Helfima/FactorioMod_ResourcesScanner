@@ -13,8 +13,8 @@ local cache_surface = nil
 ---@param surface_id uint
 ---@return ResourceData
 Surface.load = function (surface_id)
-    local cache_surfaces = Cache.getData(Surface.classname, "surfaces")
-    if cache_surfaces == nil then cache_surfaces = Cache.setData(Surface.classname, "surfaces", {}) end
+    local cache_surfaces = Cache.get_data(Surface.classname, "surfaces")
+    if cache_surfaces == nil then cache_surfaces = Cache.set_sata(Surface.classname, "surfaces", {}) end
     if cache_surfaces[surface_id] == nil then cache_surfaces[surface_id] = {} end
     cache_surface = cache_surfaces[surface_id]
     return cache_surface
@@ -301,7 +301,7 @@ end
 ---@param surface LuaSurface
 Surface.destroy = function(force, surface)
     Surface.remove_patch_tags(force, surface)
-    local cache_surfaces = Cache.getData(Surface.classname, "surfaces")
+    local cache_surfaces = Cache.get_data(Surface.classname, "surfaces")
     cache_surfaces[surface.index] = nil
 end
 

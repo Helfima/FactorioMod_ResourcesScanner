@@ -3,7 +3,7 @@
 ---@class Area
 local Area = {
   ---single-line comment
-  classname = "HMArea"
+  classname = "LibArea"
 }
 
 ---Check if position is in area

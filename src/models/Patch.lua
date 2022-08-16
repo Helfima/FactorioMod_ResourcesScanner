@@ -7,7 +7,7 @@ local Patch = {
 }
 
 Patch.create_id = function ()
-    local current_id = Cache.getData(Patch.classname, "current_id")
+    local current_id = Cache.get_data(Patch.classname, "current_id")
     if current_id == nil then current_id = 0 end
     current_id = current_id + 1
     Cache.setData(Patch.classname, "current_id", current_id)

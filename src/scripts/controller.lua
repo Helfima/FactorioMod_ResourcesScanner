@@ -4,17 +4,20 @@ local ModGui = require "mod-gui"
 
 local module = {}
 
-module.views = {}
+module.views = Form.views
 module.views["RSMapOptionsView"] = MapOptionsView("RSMapOptionsView")
 
 module.update_mod_menu = function()
     local lua_player = Player.native()
     local lua_gui_element = ModGui.get_button_flow(lua_player)
+    if lua_gui_element ~= nil and lua_gui_element[defines.mod.action.main] ~= nil then
+        lua_gui_element[defines.mod.action.main].destroy()
+    end
     if lua_gui_element ~= nil and lua_gui_element[defines.mod.action.main] == nil then
         local gui_button = GuiElement.add(lua_gui_element,
             GuiButton(defines.mod.action.main)
             :sprite("menu", defines.sprites.jewel.white, defines.sprites.jewel.black)
-            --:style("helmod_button_menu_dark")
+            :style(defines.mod.styles.mod_gui_button)
             :tooltip({ defines.mod.action.main }))
         gui_button.style.width = 37
         gui_button.style.height = 37
@@ -36,7 +39,7 @@ end
 local pattern = "([^=]*)=?([^=]*)=?([^=]*)=?([^=]*)=?([^=]*)=?([^=]*)=?([^=]*)"
 ---@param event EventData.on_gui_click
 module.on_gui_action = function(event)
-    event.classname, event.action, event.item1, event.item2, event.item3 = string.match(event.element.name, pattern)
+    event.classname, event.action, event.item1, event.item2, event.item3, event.item4 = string.match(event.element.name, pattern)
     if module.views[event.classname] then
         local view = module.views[event.classname]
         view:event(event)
@@ -48,6 +51,7 @@ local clickable_type = {}
 clickable_type["button"] = true
 clickable_type["sprite-button"] = true
 clickable_type["checkbox"] = true
+clickable_type["tabbed-pane"] = true
 
 ---@param event EventData.on_gui_click
 module.on_gui_click = function(event)
@@ -55,7 +59,7 @@ module.on_gui_click = function(event)
         if event ~= nil and event.player_index ~= nil then
             Player.load(event)
             if event.element ~= nil and event.element:get_mod() == defines.mod.mod_name and
-                clickable_type[event.element.type] == true then
+                ( clickable_type[event.element.type] == true or string.find(event.element.name, "bypass") )then
                 module.on_gui_action(event)
             end
         end
@@ -138,6 +142,7 @@ module.events =
     [defines.events.on_player_created] = module.on_player_created,
     [defines.events.on_player_joined_game] = module.on_player_joined_game,
     [defines.events.on_gui_click] = module.on_gui_click,
+    [defines.events.on_gui_selected_tab_changed] = module.on_gui_click,
     [defines.events.on_gui_confirmed] = module.on_gui_confirmed,
 }
 

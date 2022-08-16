@@ -3,7 +3,7 @@
 ---@class Player
 local Player = {
   ---single-line comment
-  classname = "HMPlayer"
+  classname = "LibPlayer"
 }
 
 local Lua_player = nil

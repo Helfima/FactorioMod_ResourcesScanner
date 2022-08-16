@@ -1,11 +1,3 @@
----@class EventModData : EventData
----@field player_index uint
----@field element LuaGuiElement
----@field classname string
----@field action string
----@field item1 string
----@field item2 string
-
 ---@class ParametersData
 ---@field index uint
 ---@field player_index uint
@@ -16,13 +8,6 @@
 ---@field force_id uint
 ---@field surface_id uint
 ---@field surface_name string
-
----@class ResourceData
----@field position MapPosition
----@field name string
----@field type string
----@field amount uint
----@field patch_id uint
 
 ---@class PatchData
 ---@field id uint
@@ -64,12 +49,3 @@
 ---@class CacheData
 ---Dictionnary {[surface.index] : SurfaceData}
 ---@field surfaces {[uint] : SurfaceData}
-
----Definition of class base
----@class newclass
-local newclass = {
-    ---Initialize
-    ---@param base newclass
-    ---@param param any
-    init=function(base, param)end,
-}

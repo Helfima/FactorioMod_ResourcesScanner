@@ -2,7 +2,7 @@
 ---@class Cache
 local Cache = {
   ---single-line comment
-  classname = "HMCache"
+  classname = "LibCache"
 }
 
 -------------------------------------------------------------------------------
@@ -18,7 +18,7 @@ end
 ---@param classname string
 ---@param name string|number
 ---@return any
-function Cache.getData(classname, name)
+function Cache.get_data(classname, name)
   local data = Cache.get()
   if classname == nil and name == nil then return data end
   if data[classname] == nil or data[classname][name] == nil then return nil end
@@ -31,7 +31,7 @@ end
 ---@param name string
 ---@param value any
 ---@return any
-function Cache.setData(classname, name, value)
+function Cache.set_data(classname, name, value)
   local data = Cache.get()
   if data[classname] == nil then data[classname] = {} end
   data[classname][name] = value
@@ -43,7 +43,7 @@ end
 ---@param classname string
 ---@param name string
 ---@return boolean
-function Cache.hasData(classname, name)
+function Cache.has_data(classname, name)
   local data = Cache.get()
   return data[classname] ~= nil and data[classname][name] ~= nil
 end
@@ -53,7 +53,7 @@ end
 ---@param classname string
 ---@param name string
 ---@return boolean
-function Cache.isEmpty(classname, name)
+function Cache.is_empty(classname, name)
   local data = Cache.get()
   if data[classname] ~= nil and data[classname][name] ~= nil then
     if type(data[classname][name]) == "string" then

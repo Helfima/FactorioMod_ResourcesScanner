@@ -1,11 +1,6 @@
 require "core.defines"
-require "core.tableExtends"
-require "core.class"
-require "core.util"
-require "core.Object"
+require "lib.lib_require"
 
-Player = require "models.Player"
-Cache = require "models.Cache"
 Resources_Manager = require("scripts.resources_manager")
 
 local handler = require("event_handler")
