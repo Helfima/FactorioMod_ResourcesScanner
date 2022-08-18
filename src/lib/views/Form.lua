@@ -197,7 +197,7 @@ function Form:event(event)
     if self:is_opened() then
       self:close(event)
     else
-      self:get_panel()
+      self:open(event)
     end
   end
   if not (self:is_opened()) then return end

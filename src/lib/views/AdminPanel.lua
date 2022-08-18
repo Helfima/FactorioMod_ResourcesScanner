@@ -14,6 +14,18 @@ function AdminPanel:on_init()
 end
 
 -------------------------------------------------------------------------------
+---On Style
+---@param styles table
+---@param width_main number
+---@param height_main number
+function AdminPanel:on_style(styles, width_main, height_main)
+  styles.flow_panel = {
+    width = 500,
+    height = 400,
+  }
+end
+
+-------------------------------------------------------------------------------
 ---Return button caption
 ---@return table
 function AdminPanel:get_button_caption()
@@ -391,7 +403,7 @@ function AdminPanel:create_tree(parent, list, expand)
   for k, info in pairs(data_info) do
     local tree_branch = GuiElement.add(parent, GuiFlowH())
     -- vertical bar
-    local vbar = GuiElement.add(tree_branch, GuiFrameV("vbar"):style("helmod_frame_product", color_name, color_index))
+    local vbar = GuiElement.add(tree_branch, GuiFrameV("vbar"):style("blurry_frame"))
     vbar.style.width = bar_thickness
     vbar.style.left_margin = 15
     if index == size then
@@ -404,19 +416,26 @@ function AdminPanel:create_tree(parent, list, expand)
     local content = GuiElement.add(tree_branch, GuiFlowV("content"))
     -- header
     local header = GuiElement.add(content, GuiFlowH("header"))
-    local hbar = GuiElement.add(header, GuiFrameV("hbar"):style("helmod_frame_product", color_name, color_index))
+    local hbar = GuiElement.add(header, GuiFrameV("hbar"):style("subheader_frame"))
     hbar.style.width = 5
     hbar.style.height = bar_thickness
     hbar.style.top_margin = 10
     hbar.style.right_margin = 5
     if info.type == "table" then
-      local caption = { "", defines.mod.tags.font.default_bold, defines.mod.tags.color.green_light, k,
-        defines.mod.tags.color.close, defines.mod.tags.font.close, " [", table.size(info.value), "]", " (", info.type, ")"}
-      if expand then
-        GuiElement.add(header, GuiLabel("global-end"):caption(caption))
+      if index >= 25 then
+        local caption = { "", defines.mod.tags.font.default_bold, defines.mod.tags.color.green_light, "... (expand)",
+        defines.mod.tags.color.close, defines.mod.tags.font.close}
+        local label = GuiElement.add(header, GuiLabel(self.classname, "global-continue", "bypass"):caption(caption))
+        label.tags = table.slice(list, 25)
       else
-        local label = GuiElement.add(header, GuiLabel(self.classname, "global-update", "bypass"):caption(caption))
-        label.tags = info
+        local caption = { "", defines.mod.tags.font.default_bold, defines.mod.tags.color.green_light, k,
+        defines.mod.tags.color.close, defines.mod.tags.font.close, " [", table.size(info.value), "]", " (", info.type, ")"}
+        if expand then
+          GuiElement.add(header, GuiLabel("global-end"):caption(caption))
+        else
+          local label = GuiElement.add(header, GuiLabel(self.classname, "global-update", "bypass"):caption(caption))
+          label.tags = info
+        end
       end
     else
       local caption = { "", defines.mod.tags.font.default_bold, defines.mod.tags.color.gold, k,
@@ -433,6 +452,9 @@ function AdminPanel:create_tree(parent, list, expand)
       next.visible = false
     end
     index = index + 1
+    if index > 25 then
+      break
+    end
   end
 end
 
@@ -460,6 +482,15 @@ function AdminPanel:on_event(event)
       parent_next.visible = true
       self:create_tree(parent_next, list)
     end
+  end
+
+  if event.action == "global-continue" then
+    local element = event.element
+    local content = element.parent.parent
+    local parent_next = content.parent.parent
+    local list = element.tags
+    content.parent.destroy()
+    self:create_tree(parent_next, list)
   end
 
   if event.action == "delete-cache" then

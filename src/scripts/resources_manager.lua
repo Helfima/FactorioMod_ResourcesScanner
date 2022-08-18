@@ -162,11 +162,7 @@ end
 
 ---@param parameters ParametersData
 module.action_reset = function(parameters)
-    local force_id = parameters.force_id
-    local force = game.forces[force_id]
-    local surface_id = parameters.surface_id
-    local surface = game.get_surface(surface_id)
-    Surface.destroy(force, surface)
+    Surface.destroy()
     parameters.finished = true
 end
 
@@ -388,7 +384,7 @@ end
 ---@param event EventData.on_chunk_generated
 module.on_chunk_generated  = function(event)
     local ok, err = pcall(function()
-        local chunk = module.get_chunk_data(event.position)
+        local chunk = Chunk.get_chunk_data(event.position)
         module.chunk_analyse(chunk, event.surface)
         --module.debug_chunk_tag(chunk, event.surface)
         --module.debug_chunk_message(chunk, event.surface)
@@ -403,7 +399,7 @@ end
 ---@param event EventData.on_chunk_charted
 module.on_chunk_charted  = function(event)
     local ok, err = pcall(function()
-        local chunk = module.get_chunk_data(event.position)
+        local chunk = Chunk.get_chunk_data(event.position)
         local surface = game.get_surface(event.surface_index)
         module.chunk_analyse(chunk, surface)
         module.debug_chunk_tag(chunk, surface)
@@ -463,8 +459,8 @@ module.events =
 {
     --[defines.events.on_resource_depleted] = module.on_resource_depleted,
     --[defines.events.on_sector_scanned] = module.on_sector_scanned
-    [defines.events.on_chunk_generated] = module.on_chunk_generated,
-    [defines.events.on_chunk_charted] = module.on_chunk_charted,
+    --[defines.events.on_chunk_generated] = module.on_chunk_generated,
+    --[defines.events.on_chunk_charted] = module.on_chunk_charted,
 }
 
 return module

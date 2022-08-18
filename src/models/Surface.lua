@@ -14,7 +14,7 @@ local cache_surface = nil
 ---@return ResourceData
 Surface.load = function (surface_id)
     local cache_surfaces = Cache.get_data(Surface.classname, "surfaces")
-    if cache_surfaces == nil then cache_surfaces = Cache.set_sata(Surface.classname, "surfaces", {}) end
+    if cache_surfaces == nil then cache_surfaces = Cache.set_data(Surface.classname, "surfaces", {}) end
     if cache_surfaces[surface_id] == nil then cache_surfaces[surface_id] = {} end
     cache_surface = cache_surfaces[surface_id]
     return cache_surface
@@ -297,12 +297,18 @@ Surface.update_markers = function(force, surface)
 end
 
 ---Destroys tags and data
----@param force LuaForce
----@param surface LuaSurface
-Surface.destroy = function(force, surface)
-    Surface.remove_patch_tags(force, surface)
+Surface.destroy = function()
     local cache_surfaces = Cache.get_data(Surface.classname, "surfaces")
-    cache_surfaces[surface.index] = nil
+    for surface_id, cache_surface in pairs(cache_surfaces) do
+        local surface = game.get_surface(surface_id)
+        Surface.load(surface_id)
+        local force_datas = Surface.get_force_datas()
+        for force_id, force_data in pairs(force_datas) do
+            local force = game.forces[force_id]
+            Surface.remove_patch_tags(force, surface)
+        end
+    end
+    Cache.set_data(Surface.classname, "surfaces", nil)
 end
 
 return Surface

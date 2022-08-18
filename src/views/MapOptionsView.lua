@@ -7,6 +7,19 @@ MapOptionsView = newclass(Form, function(base, classname)
   base.auto_clear = false
 end)
 
+
+-------------------------------------------------------------------------------
+---On Style
+---@param styles table
+---@param width_main number
+---@param height_main number
+function MapOptionsView:on_style(styles, width_main, height_main)
+  styles.flow_panel = {
+    width = 500,
+    height = 400,
+  }
+end
+
 -------------------------------------------------------------------------------
 ---On initialization
 function MapOptionsView:on_init()
