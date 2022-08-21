@@ -41,3 +41,10 @@ defines.mod.tags.font.close = "[/font]"
 defines.mod.tags.font.default_bold = "[font=default-bold]"
 defines.mod.tags.font.default_semibold = "[font=default-semibold]"
 defines.mod.tags.font.default_large_bold = "[font=default-large-bold]"
+
+defines.mod.cardinal = {}
+defines.mod.cardinal.unknown = 0
+defines.mod.cardinal.north = 1
+defines.mod.cardinal.east = 2
+defines.mod.cardinal.south = 4
+defines.mod.cardinal.west = 8

@@ -23,7 +23,6 @@ Resource.create = function(resource)
         position=resource.position,
         amount=resource.amount
     }
-    Surface.add_resource(new_resource)
     return new_resource
 end
 

@@ -23,4 +23,3 @@ local newclass = {
 ---@field name string
 ---@field type string
 ---@field amount uint
----@field patch_id uint

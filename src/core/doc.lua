@@ -9,17 +9,18 @@
 ---@field surface_id uint
 ---@field surface_name string
 
+---@class ChunkData : ChunkPositionAndArea
+---Dictionnary {[path.id] : PatchData}
+---@field patchs {[uint] : boolean}
+
 ---@class PatchData
 ---@field id uint
 ---@field name string
 ---@field icon {name:string, type:string}
 ---@field amount uint
 ---@field area BoundingBox
----Dictionnary {[resource.key] : ResourceData}
----@field resources {[uint] : ResourceData}
-
----@class ChunkData : ChunkPositionAndArea
----@field patchs table
+---Dictionnary {[chunk.key] : boolean}
+---@field chunks {[string] : boolean}
 
 ---@class ForceSettingData
 ---@field limit uint
@@ -38,6 +39,8 @@
 ---@class SurfaceData
 ---Dictionnary {[resource.key] : ResourceData}
 ---@field resources {[string] : ResourceData}
+---Dictionnary {[chunk.key] : ChunkData}
+---@field chunks {[string] : ChunkData}
 ---Dictionnary {[resource.name] : boolean}
 ---@field resource_names {[string] : boolean}
 ---Dictionnary {[path.id] : PatchData}
@@ -46,6 +49,6 @@
 ---Dictionnary {[force.index] : ForceData}
 ---@field forces {[uint] : ForceData}
 
----@class CacheData
+---@class SurfacesData
 ---Dictionnary {[surface.index] : SurfaceData}
 ---@field surfaces {[uint] : SurfaceData}

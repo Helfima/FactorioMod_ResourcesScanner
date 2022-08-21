@@ -6,18 +6,50 @@ local Surface = {
   classname = "HMSurface"
 }
 
----@type ResourceData
+---@type SurfaceData
 local cache_surface = nil
 
 ---load
 ---@param surface_id uint
----@return ResourceData
+---@return SurfaceData
 Surface.load = function (surface_id)
     local cache_surfaces = Cache.get_data(Surface.classname, "surfaces")
     if cache_surfaces == nil then cache_surfaces = Cache.set_data(Surface.classname, "surfaces", {}) end
     if cache_surfaces[surface_id] == nil then cache_surfaces[surface_id] = {} end
     cache_surface = cache_surfaces[surface_id]
     return cache_surface
+end
+
+---Get chunks
+---@return { [string]: ChunkData }
+Surface.get_chunks = function()
+    if cache_surface.chunks == nil then cache_surface.chunks = {} end
+    return cache_surface.chunks
+end
+
+---Get chunk from cache
+---@param chunk ChunkPositionAndArea
+---@return ChunkData
+Surface.get_chunk = function (chunk)
+    local chunks = Surface.get_chunks()
+    local key = Chunk.get_key(chunk)
+    return chunks[key]
+end
+
+---Get chunk from cache
+---@param key string
+---@return ChunkData
+Surface.get_chunk_by_key = function (key)
+    local chunks = Surface.get_chunks()
+    return chunks[key]
+end
+
+---Add a chunk into cache
+---@param chunk ChunkData
+Surface.add_chunk = function (chunk)
+    local chunks = Surface.get_chunks()
+    local key = Chunk.get_key(chunk)
+    chunks[key] = chunk
 end
 
 ---Get resource names from cache
@@ -42,7 +74,8 @@ Surface.get_resource_name = function (resource_name)
     return resource_names[resource_name]
 end
 
----Get ressosurces
+---Get resources
+---@deprecated you not must store tile in global, it will cause slowness
 ---@return { [string]: ResourceData }
 Surface.get_resources = function()
     if cache_surface.resources == nil then cache_surface.resources = {} end
@@ -50,6 +83,7 @@ Surface.get_resources = function()
 end
 
 ---Get resource from cache
+---@deprecated you not must store tile in global, it will cause slowness
 ---@param resource LuaEntity
 ---@return ResourceData
 Surface.get_resource = function (resource)
@@ -59,6 +93,7 @@ Surface.get_resource = function (resource)
 end
 
 ---Add a resource into cache
+---@deprecated you not must store tile in global, it will cause slowness
 ---@param resource ResourceData
 Surface.add_resource = function (resource)
     local resources = Surface.get_resources();
@@ -100,6 +135,13 @@ end
 ---Remove a patch from cache
 ---@param patch PatchData
 Surface.remove_patch = function (patch)
+    local chunks = Surface.get_chunks()
+    for chunk_key, _ in pairs(patch.chunks) do
+        if chunks[chunk_key] then
+            local chunk =  chunks[chunk_key]
+            chunk.patchs[patch.id] = nil
+        end
+    end
     local patchs = Surface.get_patchs()
     patchs[patch.id] = nil
 end
