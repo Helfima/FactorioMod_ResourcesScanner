@@ -3,9 +3,28 @@ defines.events = defines.events or {}
 
 defines.mod = {}
 
+defines.mod.events = {}
+defines.mod.events.on_gui_action = "on_gui_action"
+defines.mod.events.on_gui_queue = "on_gui_queue"
+defines.mod.events.on_gui_event = "on_gui_event"
+defines.mod.events.on_gui_open = "on_gui_open"
+defines.mod.events.on_gui_update = "on_gui_update"
+defines.mod.events.on_gui_close = "on_gui_close"
+defines.mod.events.on_gui_error = "on_gui_error"
+defines.mod.events.on_gui_message = "on_gui_message"
+
+defines.mod.events.pattern = "([^=]*)=?([^=]*)=?([^=]*)=?([^=]*)=?([^=]*)=?([^=]*)=?([^=]*)"
+
+defines.mod.events.clickable_type = {}
+defines.mod.events.clickable_type["button"] = true
+defines.mod.events.clickable_type["sprite-button"] = true
+defines.mod.events.clickable_type["choose-elem-button"] = true
+
 defines.mod.styles = {}
 defines.mod.styles.mod_gui_button = "frame_button"
-defines.mod.styles.frame = "inner_frame_in_outer_frame"
+defines.mod.styles.frame = "frame"
+defines.mod.styles.inside_deep_frame = "inside_deep_frame"
+defines.mod.styles.frame_inner_outer = "inner_frame_in_outer_frame"
 defines.mod.styles.frame_invisible ="invisible_frame"
 defines.mod.styles.frame_action_button ="frame_action_button"
 defines.mod.styles.inner = "inside_shallow_frame_with_padding"

@@ -17,6 +17,7 @@ local newclass = {
 ---@field item2 string
 ---@field item3 string
 ---@field item4 string
+---@field message string
 
 ---@class ResourceData
 ---@field position MapPosition

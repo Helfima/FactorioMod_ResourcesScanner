@@ -222,6 +222,7 @@ module.action_scan = function(parameters)
     if parameters.cleanup == nil then
         Surface.remove_patch_tags(force, surface)
         parameters.cleanup = true
+        Dispatcher:send(defines.mod.events.on_gui_update, nil, Dispatcher.classname)
         return
     end
     -- load chunks
@@ -236,17 +237,20 @@ module.action_scan = function(parameters)
         local step = 1
         module.get_chunks_patchs(parameters, step)
         if parameters.percent == nil then parameters.percent = 0 end
+        local ratio = parameters.index / #parameters.chunks
         local percent = 100 * parameters.index / #parameters.chunks
-        if percent >= parameters.percent + 10 then
+        if percent >= parameters.percent + 1 then
             parameters.percent = percent
-            Player.printf("%s%s%%!", "Loaded resources:", percent)
+            Dispatcher:send(defines.mod.events.on_gui_update, {percent = ratio}, MapOptionsView.classname)
+            --Player.printf("%s%s%%!", "Loaded resources:", percent)
         end
         -- incremente l'index
         parameters.index = parameters.index + step
         return
     else
         parameters.finished = true
-        Player.print("Finished tags!")
+        Dispatcher:send(defines.mod.events.on_gui_update, nil, Dispatcher.classname)
+        Player.print("Finished scan!")
     end
 end
 

@@ -9,6 +9,7 @@
 ---@field add_special_button boolean
 Form = newclass(Object, function(base, classname)
   Object.init(base, classname)
+  base:bind()
   base:style()
   base.inner_frame = defines.mod.styles.inner
   base.locate = defines.mod.views.locate.screen
@@ -18,7 +19,29 @@ Form = newclass(Object, function(base, classname)
   base.add_special_button = true
 end)
 
+---@field {[string] : Form}
 Form.views = {}
+
+-------------------------------------------------------------------------------
+---Bind Dispatcher
+function Form:bind()
+  Dispatcher:bind(defines.mod.events.on_gui_event, self, self.event)
+
+  Dispatcher:bind(defines.mod.events.on_gui_open, self, self.open)
+  Dispatcher:bind(defines.mod.events.on_gui_open, self, self.update)
+
+  Dispatcher:bind(defines.mod.events.on_gui_update, self, self.update)
+  Dispatcher:bind(defines.mod.events.on_gui_close, self, self.close)
+
+  Dispatcher:bind("on_gui_error", self, self.update_error)
+  Dispatcher:bind("on_gui_message", self, self.update_message)
+  self:on_bind()
+end
+
+-------------------------------------------------------------------------------
+---On Bind Dispatcher
+function Form:on_bind()
+end
 
 -------------------------------------------------------------------------------
 ---Style
@@ -59,7 +82,7 @@ end
 
 -------------------------------------------------------------------------------
 ---Get Button Sprites
----@return string,string
+---@return string|nil,string|nil
 function Form:get_button_sprites()
   return nil,nil
 end
@@ -106,7 +129,7 @@ end
 
 --------------------------------------------------------------------------------
 ---Get the parent panel
----@return LuaGuiElement
+---@return LuaGuiElement, LuaGuiElement, LuaGuiElement
 function Form:get_panel()
   local panel_name = self:get_panel_name()
   local inner_name = "inner"
@@ -118,7 +141,7 @@ function Form:get_panel()
         parent_panel[panel_name][header_name][menu_name]
   end
   ---main panel
-  local flow_panel = GuiElement.add(parent_panel, GuiFrameV(panel_name):style(defines.mod.styles.frame))
+  local flow_panel = GuiElement.add(parent_panel, GuiFrameV(panel_name):style(defines.mod.styles.frame_inner_outer))
   flow_panel.style.horizontally_stretchable = true
   flow_panel.style.vertically_stretchable = true
   flow_panel.location = User.get_form_location(panel_name)
@@ -145,9 +168,30 @@ function Form:get_panel()
 end
 
 -------------------------------------------------------------------------------
+---Get or create frame panel
+---@param panel_name string
+---@param style? string
+---@param direction? string --horizontal, vertical
+---@return LuaGuiElement
+function Form:get_frame_panel(panel_name, style, direction)
+  local flow_panel, content_panel, menu_panel = self:get_panel()
+  if content_panel[panel_name] ~= nil and content_panel[panel_name].valid then
+    return content_panel[panel_name]
+  end
+  local frame_panel = nil
+  if direction == "horizontal" then
+    frame_panel = GuiElement.add(content_panel, GuiFrameH(panel_name):style(style or defines.mod.styles.frame))
+  else
+    frame_panel = GuiElement.add(content_panel, GuiFrameV(panel_name):style(style or defines.mod.styles.frame))
+  end
+  frame_panel.style.horizontally_stretchable = true
+  return frame_panel
+end
+
+-------------------------------------------------------------------------------
 ---Get or create flow panel
 ---@param panel_name string
----@param direction string
+---@param direction? string
 ---@return LuaGuiElement
 function Form:get_flow_panel(panel_name, direction)
   local flow_panel, content_panel, menu_panel = self:get_panel()
@@ -179,6 +223,15 @@ function Form:get_scroll_panel(panel_name)
 end
 
 -------------------------------------------------------------------------------
+---Get or create frame panel
+---@param panel_name string
+---@param direction? string --horizontal, vertical
+---@return LuaGuiElement
+function Form:get_frame_deep_panel(panel_name, direction)
+  return self:get_frame_panel(panel_name, defines.mod.styles.inside_deep_frame, direction)
+end
+
+-------------------------------------------------------------------------------
 ---Is opened panel
 ---@return boolean
 function Form:is_opened()
@@ -193,13 +246,6 @@ end
 ---Event
 ---@param event EventModData
 function Form:event(event)
-  if event.action == "OPEN" then
-    if self:is_opened() then
-      self:close(event)
-    else
-      self:open(event)
-    end
-  end
   if not (self:is_opened()) then return end
   self:on_event_form(event)
   self:on_event(event)
@@ -358,4 +404,24 @@ end
 function Form:add_cell_header(guiTable, name, caption)
   local cell = GuiElement.add(guiTable, GuiFlowH("header", name))
   GuiElement.add(cell, GuiLabel("label"):caption(caption))
+end
+
+-------------------------------------------------------------------------------
+---Update message
+---@param event EventModData
+function Form:update_message(event)
+  if not(self:is_opened()) then return end
+  local panel = self:get_frame_deep_panel("message")
+  panel.clear()
+  GuiElement.add(panel, GuiLabel("message"):caption(event.message))
+end
+
+-------------------------------------------------------------------------------
+---Update error
+---@param event EventModData
+function Form:update_error(event)
+  if not(self:is_opened()) then return end
+  local panel = self:get_frame_deep_panel("error")
+  panel.clear()
+  GuiElement.add(panel, GuiLabel("message"):caption(event.message or "Unknown error"):color("red"))
 end

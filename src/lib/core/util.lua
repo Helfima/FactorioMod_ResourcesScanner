@@ -24,10 +24,15 @@ end
 
 ---Pcall on event function
 ---@param callback function
+---@return function
 function Event_pcall(callback)
-  local ok , err = pcall(callback)
-  if not(ok) then
-    Player.print(err)
-    log(err)
+  return function(...)
+    local ok , err = pcall(function(...)
+      callback(...)
+    end)
+    if not(ok) then
+      Player.print(err)
+      log(err)
+    end
   end
 end

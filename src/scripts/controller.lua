@@ -1,11 +1,8 @@
-require("gui.Gui")
-require("views.Views")
 local ModGui = require "mod-gui"
 
 local module = {}
 
 module.views = Form.views
-module.views["RSMapOptionsView"] = MapOptionsView("RSMapOptionsView")
 
 module.update_mod_menu = function()
     local lua_player = Player.native()
@@ -33,57 +30,6 @@ module.reset_ui = function()
                 lua_element.destroy()
             end
         end
-    end
-end
-
-local pattern = "([^=]*)=?([^=]*)=?([^=]*)=?([^=]*)=?([^=]*)=?([^=]*)=?([^=]*)"
----@param event EventData.on_gui_click
-module.on_gui_action = function(event)
-    event.classname, event.action, event.item1, event.item2, event.item3, event.item4 = string.match(event.element.name, pattern)
-    if module.views[event.classname] then
-        local view = module.views[event.classname]
-        view:event(event)
-        view:update(event)
-    end
-end
-
-local clickable_type = {}
-clickable_type["button"] = true
-clickable_type["sprite-button"] = true
-clickable_type["checkbox"] = true
-clickable_type["tabbed-pane"] = true
-
----@param event EventData.on_gui_click
-module.on_gui_click = function(event)
-    local ok, err = pcall(function()
-        if event ~= nil and event.player_index ~= nil then
-            Player.load(event)
-            if event.element ~= nil and event.element:get_mod() == defines.mod.mod_name and
-                ( clickable_type[event.element.type] == true or string.find(event.element.name, "bypass") )then
-                module.on_gui_action(event)
-            end
-        end
-    end)
-    if not (ok) then
-        Player.print(err)
-        log(err)
-    end
-end
-
----@param event EventData.on_gui_confirmed
-module.on_gui_confirmed = function(event)
-    local ok, err = pcall(function()
-        if event ~= nil and event.player_index ~= nil then
-            Player.load(event)
-            if event.element ~= nil and event.element:get_mod() == defines.mod.mod_name and
-                event.element.type == "textfield" then
-                module.on_gui_action(event)
-            end
-        end
-    end)
-    if not (ok) then
-        Player.print(err)
-        log(err)
     end
 end
 
@@ -141,9 +87,6 @@ module.events =
     [defines.events.on_console_command] = module.on_console_command,
     [defines.events.on_player_created] = module.on_player_created,
     [defines.events.on_player_joined_game] = module.on_player_joined_game,
-    [defines.events.on_gui_click] = module.on_gui_click,
-    [defines.events.on_gui_selected_tab_changed] = module.on_gui_click,
-    [defines.events.on_gui_confirmed] = module.on_gui_confirmed,
 }
 
 return module
