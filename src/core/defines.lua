@@ -1,6 +1,3 @@
-require "core.defines_builded"
-require "lib.core.defines"
-
 defines.mod.tag = "rs"
 defines.mod.mod_name = "ResourcesScanner"
 

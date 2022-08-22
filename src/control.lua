@@ -1,5 +1,5 @@
+require "__HelfimaLib__.lib_require"
 require "core.defines"
-require "lib.lib_require"
 require("views.Views")
 
 local handler = require("event_handler")
