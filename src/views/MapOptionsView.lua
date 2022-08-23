@@ -4,6 +4,7 @@
 MapOptionsView = newclass(Form, function(base, classname)
     Form.init(base, classname)
     base.auto_clear = true
+    base.mod_menu = true
 end)
 
 
@@ -24,6 +25,13 @@ end
 function MapOptionsView:on_init()
     self.panel_caption = { "ResourcesScanner-MapOptionsView.title" }
     --self.parameterLast = string.format("%s_%s",self.classname,"last")
+end
+
+-------------------------------------------------------------------------------
+---Get Button Sprites
+---@return string,string
+function MapOptionsView:get_button_sprites()
+  return defines.sprites.jewel.white, defines.sprites.jewel.black
 end
 
 -------------------------------------------------------------------------------
