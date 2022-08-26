@@ -23,7 +23,7 @@ end
 -------------------------------------------------------------------------------
 ---On initialization
 function MapOptionsView:on_init()
-    self.panel_caption = { "ResourcesScanner-MapOptionsView.title" }
+    self.panel_caption = { "ResourcesScanner.options-title" }
     --self.parameterLast = string.format("%s_%s",self.classname,"last")
 end
 
@@ -50,6 +50,12 @@ function MapOptionsView:on_event(event)
     local surface = Player.get_surface()
     Surface.load(surface.index)
     local setting = Surface.get_setting(force, resource_name)
+
+    if event.action == "resource-open" then
+        User.set_parameter("resource_name", resource_name)
+        event.action = "OPEN"
+        Dispatcher:send(defines.mod.events.on_gui_open, event, "RSResourcesView")
+    end
 
     if event.action == "resource-show" then
         Surface.set_setting(force, resource_name, setting.limit, not (setting.show))
@@ -85,7 +91,7 @@ function MapOptionsView:update_resources(event)
     Surface.load(surface.index)
     local resource_names = Surface.get_resource_names()
 
-    local scan_panel = self:get_flow_panel("scan", "horizontal")
+    local scan_panel = self:get_flow_panel("scan", defines.mod.direction.horizontal)
     local button = GuiElement.add(scan_panel,
         GuiButton(self.classname, "scan-map"):caption("Scan map"))
 
@@ -99,17 +105,17 @@ function MapOptionsView:update_resources(event)
         local list_panel = GuiElement.add(scroll, GuiTable("list"):column(6))
         list_panel.style.cell_padding = 2
         GuiElement.add(list_panel,
-            GuiLabel("label", "column", 1):caption({ "ResourcesScanner-MapOptionsView.column-header-visible" }))
+            GuiLabel("label", "column", 1):caption({ "ResourcesScanner.visible" }))
         GuiElement.add(list_panel,
-            GuiLabel("label", "column", 2):caption({ "ResourcesScanner-MapOptionsView.column-header-resource" }))
+            GuiLabel("label", "column", 2):caption({ "ResourcesScanner.resource" }))
         GuiElement.add(list_panel,
-            GuiLabel("label", "column", 3):caption({ "ResourcesScanner-MapOptionsView.column-header-limit" }))
+            GuiLabel("label", "column", 3):caption({ "ResourcesScanner.limit" }))
         GuiElement.add(list_panel,
-            GuiLabel("label", "column", 4):caption({ "ResourcesScanner-MapOptionsView.column-header-count" }))
+            GuiLabel("label", "column", 4):caption({ "ResourcesScanner.count" }))
         GuiElement.add(list_panel,
-            GuiLabel("label", "column", 5):caption({ "ResourcesScanner-MapOptionsView.column-header-quantity" }))
+            GuiLabel("label", "column", 5):caption({ "ResourcesScanner.quantity" }))
         GuiElement.add(list_panel,
-            GuiLabel("label", "column", 6):caption({ "ResourcesScanner-MapOptionsView.column-header-action" }))
+            GuiLabel("label", "column", 6):caption({ "ResourcesScanner.action" }))
 
         local quantities = Surface.get_patch_quantities()
         local resources = Player.get_resource_entity_prototypes()

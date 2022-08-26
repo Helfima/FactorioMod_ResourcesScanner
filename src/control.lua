@@ -7,6 +7,7 @@ local handler = require("event_handler")
 handler.add_lib(Dispatcher)
 
 Form.views["RSMapOptionsView"] = MapOptionsView("RSMapOptionsView")
+Form.views["RSResourcesView"] = ResourcesView("RSResourcesView")
 
 Resources_Manager = require("scripts.resources_manager")
 handler.add_lib(Resources_Manager)
