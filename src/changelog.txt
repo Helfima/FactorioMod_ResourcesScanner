@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.1
+Date: 2022-08-28
+  Changes:
+    - Added ditance from origin in resources list
+    - Changed some text
+  Bugfixes:
+    - Fixed ping gps on another surface (nbt nauvis)
+---------------------------------------------------------------------------------------------------
 Version: 0.3.0
 Date: 2022-08-26
   Info:

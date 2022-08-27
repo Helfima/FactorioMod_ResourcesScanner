@@ -46,8 +46,9 @@ function ResourcesView:on_event(event)
         local patch = Surface.get_patch(patch_id)
         local quantity = patch.amount or 0
         local position = Area.get_center(patch.area)
-        local gps = Position.get_gps_string(position)
-        Player.print_localized({"ResourcesScanner.ping-message" , Format.floorNumberKilo(quantity), resource.localised_name, gps})
+        local gps = Position.get_gps_string(position, surface)
+        Player.print_localized({ "ResourcesScanner.ping-message", Format.floorNumberKilo(quantity),
+            resource.localised_name, gps })
     end
 
 end
@@ -77,17 +78,20 @@ function ResourcesView:update_resources(event)
     local patchs = Surface.get_patchs()
 
     local scroll = self:get_scroll_panel("scroll")
-    local list_panel = GuiElement.add(scroll, GuiTable("list"):column(3))
+    local list_panel = GuiElement.add(scroll, GuiTable("list"):column(4))
     list_panel.style.cell_padding = 2
     GuiElement.add(list_panel,
         GuiLabel("label", "column", 1):caption({ "ResourcesScanner.resource" }))
     GuiElement.add(list_panel,
         GuiLabel("label", "column", 2):caption({ "ResourcesScanner.quantity" }))
     GuiElement.add(list_panel,
-        GuiLabel("label", "column", 3):caption({ "ResourcesScanner.action" }))
+        GuiLabel("label", "column", 3):caption({ "ResourcesScanner.distance-from-origin" }))
+    GuiElement.add(list_panel,
+        GuiLabel("label", "column", 4):caption({ "ResourcesScanner.action" }))
 
-    for _, patch in spairs(patchs, function(t,a,b) return t[b].amount < t[a].amount end) do
+    for _, patch in spairs(patchs, function(t, a, b) return t[b].amount < t[a].amount end) do
         if patch.name == resource.name then
+            local center = Area.get_center(patch.area)
             local icon = EntityPrototype.get_icon_string(resource)
             local label = GuiElement.add(list_panel,
                 GuiLabel("label", patch.id):caption({ "", icon }):tooltip(resource.localised_name))
@@ -96,8 +100,12 @@ function ResourcesView:update_resources(event)
             local label_quantity = GuiElement.add(list_panel,
                 GuiLabel("label_quantity", patch.id):caption(Format.floorNumberKilo(quantity)))
 
+            local distance = math.ceil(Position.distance({x=0,y=0}, center))
+            local label_distance = GuiElement.add(list_panel,
+                GuiLabel("label_distance", patch.id):caption(distance))
+
             local button = GuiElement.add(list_panel,
-                GuiButton(self.classname, "patch-ping", patch.id):caption({"ResourcesScanner.ping"}))
+                GuiButton(self.classname, "patch-ping", patch.id):caption({ "ResourcesScanner.ping" }))
         end
     end
 end

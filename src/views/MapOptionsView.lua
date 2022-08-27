@@ -93,7 +93,7 @@ function MapOptionsView:update_resources(event)
 
     local scan_panel = self:get_flow_panel("scan", defines.mod.direction.horizontal)
     local button = GuiElement.add(scan_panel,
-        GuiButton(self.classname, "scan-map"):caption("Scan map"))
+        GuiButton(self.classname, "scan-map"):caption({"ResourcesScanner.scan-map"}))
 
     if event.percent then
         local caption = math.floor(event.percent * 100)
@@ -144,7 +144,7 @@ function MapOptionsView:update_resources(event)
                     GuiLabel("label_quantity", resource.name):caption(Format.floorNumberKilo(quantity)))
 
                 local button = GuiElement.add(list_panel,
-                    GuiButton(self.classname, "resource-open", resource.name):caption("visualize"))
+                    GuiButton(self.classname, "resource-open", resource.name):caption({"ResourcesScanner.resources-list"}))
             end
         end
     end
