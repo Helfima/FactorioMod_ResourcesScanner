@@ -109,6 +109,17 @@ function Surface.get_patchs()
     return cache_surface.patchs
 end
 
+---Get Patchs
+---@return { [uint]: uint }
+function Surface.get_patch_ids()
+    if cache_surface.patchs == nil then cache_surface.patchs = {} end
+    local ids = {}
+    for patch_id, patch in pairs(cache_surface.patchs) do
+        table.insert(ids, patch_id)
+    end
+    return ids
+end
+
 ---Get patch form cache
 ---@param patch_id uint
 ---@return PatchData
@@ -268,6 +279,30 @@ function Surface.update_patch_tag(force, surface, patch)
         local tag = Surface.add_patch_tag(force, surface, patch, position, header, icon)
         if tag ~= nil then
             patch.tag_number = tag.tag_number
+        end
+    end
+end
+
+---update tag
+---@param force LuaForce
+---@param surface LuaSurface
+---@param patch PatchData
+function Surface.refresh_patch_tag(force, surface, patch)
+    local header = Format.floorNumberKilo(patch.amount, 1)
+    local position = Area.get_center(patch.area)
+    --header = string.format("%s=>%s", patch.id, header)
+    if patch.tag_number then
+        local area = patch.area
+        local force_tags = force.find_chart_tags(surface, area)
+        if force_tags ~= nil then
+            for _, tag in pairs(force_tags) do
+                if tag.tag_number == patch.tag_number then
+                    tag.position.x = position.x
+                    tag.position.y = position.y
+                    tag.text = header
+                    break
+                end
+            end
         end
     end
 end

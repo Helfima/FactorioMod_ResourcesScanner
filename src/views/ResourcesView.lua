@@ -15,7 +15,8 @@ end)
 function ResourcesView:on_style(styles, width_main, height_main)
     styles.flow_panel = {
         width = 500,
-        height = 400,
+        minimal_height = 400,
+        maximal_height = height_main-200,
     }
 end
 

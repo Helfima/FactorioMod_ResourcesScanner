@@ -16,7 +16,8 @@ end)
 function MapOptionsView:on_style(styles, width_main, height_main)
     styles.flow_panel = {
         width = 500,
-        height = 400,
+        minimal_height = 400,
+        maximal_height = height_main-200,
     }
 end
 
@@ -81,6 +82,18 @@ function MapOptionsView:on_event(event)
             Player.print("Already in queue!")
         end
     end
+
+    if event.action == "scan-refresh" then
+        event.name = defines.mod.command.name
+        event.parameter = "refresh"
+        local parameters = Resources_Manager.get_parameter(event)
+        local response = Resources_Manager.append_queue(parameters)
+        if response then
+            Player.printf("Added in queue! %s", parameters.surface_name)
+        else
+            Player.print("Already in queue!")
+        end
+    end
 end
 
 ---@param event EventModData
@@ -90,17 +103,25 @@ function MapOptionsView:update_resources(event)
     local surface = Player.get_surface()
     Surface.load(surface.index)
     local resource_names = Surface.get_resource_names()
+    local has_patch = table.size(resource_names) > 0
 
     local scan_panel = self:get_flow_panel("scan", defines.mod.direction.horizontal)
-    local button = GuiElement.add(scan_panel,
+    local button_scan = GuiElement.add(scan_panel,
         GuiButton(self.classname, "scan-map"):caption({"ResourcesScanner.scan-map"}))
-
+    local button_refresh = GuiElement.add(scan_panel,
+    GuiButton(self.classname, "scan-refresh"):caption({"ResourcesScanner.scan-refresh"}))
     if event.percent then
+        local percent_panel = self:get_flow_panel("percent", defines.mod.direction.horizontal)
         local caption = math.floor(event.percent * 100)
-        local bar = GuiElement.add(scan_panel,
-            GuiProgressBar(self.classname, "scan-bar"):value(event.percent):caption(caption):style("heat_progressbar"))
+        local bar = GuiElement.add(percent_panel,
+            GuiProgressBar(self.classname, "scan-bar"):value(event.percent):caption(caption):style("scan_progressbar"))
+        bar.style.top_margin = 3
+        button_scan.enabled = false
+        button_refresh.enabled = false
+    else
+        button_refresh.enabled = has_patch
     end
-    if table.size(resource_names) > 0 then
+    if has_patch then
         local scroll = self:get_scroll_panel("scroll")
         local list_panel = GuiElement.add(scroll, GuiTable("list"):column(6))
         list_panel.style.cell_padding = 2

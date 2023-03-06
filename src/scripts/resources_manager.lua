@@ -131,6 +131,8 @@ module.run_on_tick = function(parameters)
             module.action_remove(parameters)
         elseif action == "scan" then
             module.action_scan(parameters)
+        elseif action == "refresh" then
+            module.action_refresh(parameters)
         elseif action == "show" then
             module.action_show(parameters)
         elseif action == "hide" then
@@ -249,8 +251,75 @@ module.action_scan = function(parameters)
         return
     else
         parameters.finished = true
-        Dispatcher:send(defines.mod.events.on_gui_update, nil, Dispatcher.classname)
+        Dispatcher:send(defines.mod.events.on_gui_update, nil, MapOptionsView.classname)
         Player.print("Finished scan!")
+    end
+end
+
+---@param parameters ParametersData
+module.action_refresh = function(parameters)
+
+    if parameters.patch_ids == nil then
+        parameters.patch_ids = Surface.get_patch_ids()
+    end
+
+    if parameters.index == nil then parameters.index = 1 end
+
+    -- refresh resources
+    if parameters.index <= #parameters.patch_ids then
+        local step = 1
+        module.refresh_patchs(parameters, step)
+        if parameters.percent == nil then parameters.percent = 0 end
+        local ratio = parameters.index / #parameters.patch_ids
+        local percent = 100 * parameters.index / #parameters.patch_ids
+        if percent >= parameters.percent + 1 then
+            parameters.percent = percent
+            Dispatcher:send(defines.mod.events.on_gui_update, {percent = ratio}, MapOptionsView.classname)
+            --Player.printf("%s%s%%!", "Loaded resources:", percent)
+        end
+        -- incremente l'index
+        parameters.index = parameters.index + step
+        return
+    else
+        parameters.finished = true
+        Dispatcher:send(defines.mod.events.on_gui_update, nil, MapOptionsView.classname)
+        Player.print("Finished refresh!")
+    end
+end
+
+---@param parameters ParametersData
+---@param step uint
+module.refresh_patchs = function(parameters, step)
+    local force_id = parameters.force_id
+    local force = game.forces[force_id]
+    local surface_id = parameters.surface_id
+    local surface = game.get_surface(surface_id)
+    local index_start = parameters.index
+    local index_end = parameters.index + step - 1
+    for i = index_start, index_end, 1 do
+        local patch_id = parameters.patch_ids[i]
+        local patch = Surface.get_patch(patch_id)
+        if patch == nil then break end -- loop finished
+        local patchs = module.refresh_patch(force, surface, patch)
+    end
+end
+
+---@param force LuaForce
+---@param surface LuaSurface
+---@param patch PatchData
+module.refresh_patch = function(force, surface, patch)
+    local resources = surface.find_entities_filtered({ area = patch.area, type = "resource", name = patch.name })
+    patch.amount = 0
+    if #resources > 0 then
+        if patch.amount_started == nil then patch.amount_started = patch.amount end
+        for _, resource in pairs(resources) do
+            patch.amount = patch.amount + resource.amount
+        end
+    end
+    if patch.amount > 0 then
+        Surface.refresh_patch_tag(force, surface, patch)
+    else
+        Surface.remove_patch_tag(force, surface, patch)
     end
 end
 
@@ -368,10 +437,12 @@ module.get_chunk_patchs = function(chunk, surface)
                 -- ressource visité
                 local patch = Surface.get_patch(resource_visited.patch_id)
                 if patch == nil then
-                    error("no patch!")
-                end
-                if patchs[patch.id] == nil then
-                    patchs[patch.id] = patch
+                    -- strange bug
+                    -- Player.printf("no patch %s at %s,%s !", resource_visited.patch_id, resource_visited.position.x, resource_visited.position.y)
+                else
+                    if patchs[patch.id] == nil then
+                        patchs[patch.id] = patch
+                    end
                 end
             end
         end
