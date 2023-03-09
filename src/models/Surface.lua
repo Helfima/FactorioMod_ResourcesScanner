@@ -225,7 +225,7 @@ function Surface.get_setting(force, resource_name)
     local settings = Surface.get_settings(force);
     if settings[resource_name] == nil then
         settings[resource_name] = {
-            limit = 10 * 1000,
+            limit = defines.mod.default.limit,
             show = false
         }
     end

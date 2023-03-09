@@ -67,6 +67,7 @@ function MapOptionsView:on_event(event)
         local text = event.element.text
         local limit = string.parse_number(text)
         Surface.set_setting(force, resource_name, limit, setting.show)
+        Dispatcher:send(defines.mod.events.on_gui_update, nil, MapOptionsView.classname)
         Surface.update_markers(force, surface)
     end
 
