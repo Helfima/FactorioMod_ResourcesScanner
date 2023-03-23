@@ -15,7 +15,8 @@ end)
 ---@param height_main number
 function MapOptionsView:on_style(styles, width_main, height_main)
     styles.flow_panel = {
-        width = 500,
+        minimal_width = 520,
+        maximal_width = 700,
         minimal_height = 400,
         maximal_height = height_main-200,
     }
@@ -26,6 +27,21 @@ end
 function MapOptionsView:on_init()
     self.panel_caption = { "ResourcesScanner.options-title" }
     --self.parameterLast = string.format("%s_%s",self.classname,"last")
+end
+
+-------------------------------------------------------------------------------
+---For Bind Dispatcher Event
+function MapOptionsView:on_bind()
+    Dispatcher:bind(defines.mod.events.on_before_delete_cache, self, self.on_before_delete_cache)
+end
+
+-------------------------------------------------------------------------------
+---On Update
+---@param event EventModData
+function MapOptionsView:on_before_delete_cache(event)
+    -- remove all data
+    Surface.destroy()
+    Dispatcher:send(defines.mod.events.on_gui_update, nil, MapOptionsView.classname)
 end
 
 -------------------------------------------------------------------------------
@@ -61,6 +77,21 @@ function MapOptionsView:on_event(event)
     if event.action == "resource-show" then
         Surface.set_setting(force, resource_name, setting.limit, not (setting.show))
         Surface.update_markers(force, surface)
+        Dispatcher:send(defines.mod.events.on_gui_update, nil, MapOptionsView.classname)
+    end
+
+    if event.action == "resource-show-all" then
+        local show=event.element.state
+        local resources = Player.get_resource_entity_prototypes()
+        for _, resource in pairs(resources) do
+            local resource_name = resource.name
+            if Surface.get_resource_name(resource_name) then
+                local setting = Surface.get_setting(force, resource_name)
+                Surface.set_setting(force, resource_name, setting.limit, show)
+                Surface.update_markers(force, surface)
+            end
+        end
+        Dispatcher:send(defines.mod.events.on_gui_update, nil, MapOptionsView.classname)
     end
 
     if event.action == "resource-limit" then
@@ -124,20 +155,18 @@ function MapOptionsView:update_resources(event)
     end
     if has_patch then
         local scroll = self:get_scroll_panel("scroll")
-        local list_panel = GuiElement.add(scroll, GuiTable("list"):column(6))
+
+        local list_panel = GuiElement.add(scroll, GuiTable("list"):column(6):style("helfima_lib_table_default"))
         list_panel.style.cell_padding = 2
-        GuiElement.add(list_panel,
-            GuiLabel("label", "column", 1):caption({ "ResourcesScanner.visible" }))
-        GuiElement.add(list_panel,
-            GuiLabel("label", "column", 2):caption({ "ResourcesScanner.resource" }))
-        GuiElement.add(list_panel,
-            GuiLabel("label", "column", 3):caption({ "ResourcesScanner.limit" }))
-        GuiElement.add(list_panel,
-            GuiLabel("label", "column", 4):caption({ "ResourcesScanner.count" }))
-        GuiElement.add(list_panel,
-            GuiLabel("label", "column", 5):caption({ "ResourcesScanner.quantity" }))
-        GuiElement.add(list_panel,
-            GuiLabel("label", "column", 6):caption({ "ResourcesScanner.action" }))
+
+        local resource_state_all = true
+        local resource_show_all = GuiElement.add(list_panel, GuiCheckBox(self.classname, "resource-show-all", 1):state(false):caption({ "ResourcesScanner.visible" }))
+        
+        GuiElement.add(list_panel, GuiLabel("label", "column", 2):caption({ "ResourcesScanner.resource" }))
+        GuiElement.add(list_panel, GuiLabel("label", "column", 3):caption({ "ResourcesScanner.limit" }))
+        GuiElement.add(list_panel, GuiLabel("label", "column", 4):caption({ "ResourcesScanner.count" }))
+        GuiElement.add(list_panel, GuiLabel("label", "column", 5):caption({ "ResourcesScanner.quantity" }))
+        GuiElement.add(list_panel, GuiLabel("label", "column", 6):caption({ "ResourcesScanner.action" }))
 
         local quantities = Surface.get_patch_quantities()
         local resources = Player.get_resource_entity_prototypes()
@@ -145,6 +174,9 @@ function MapOptionsView:update_resources(event)
             if Surface.get_resource_name(resource.name) then
                 local setting = Surface.get_setting(force, resource.name)
                 local show = setting.show
+                if show == false then
+                    resource_state_all = false
+                end
                 local limit = Format.floorNumberKilo(setting.limit)
 
                 local checkbox = GuiElement.add(list_panel,
@@ -169,5 +201,6 @@ function MapOptionsView:update_resources(event)
                     GuiButton(self.classname, "resource-open", resource.name):caption({"ResourcesScanner.resources-list"}))
             end
         end
+        resource_show_all.state = resource_state_all
     end
 end

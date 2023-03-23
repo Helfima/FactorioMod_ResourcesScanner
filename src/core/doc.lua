@@ -8,6 +8,8 @@
 ---@field force_id uint
 ---@field surface_id uint
 ---@field surface_name string
+---@field chunks ChunkData
+---@field patch_ids {[uint] : uint}
 
 ---@class ChunkData : ChunkPositionAndArea
 ---Dictionnary {[path.id] : PatchData}
@@ -18,6 +20,7 @@
 ---@field name string
 ---@field icon {name:string, type:string}
 ---@field amount uint
+---@field tag_number uint
 ---@field area BoundingBox
 ---Dictionnary {[chunk.key] : boolean}
 ---@field chunks {[string] : boolean}
