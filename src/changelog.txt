@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.5.0
+Date: 2023-05-19
+  Features:
+    - Added settings map scan_step_by_tick
+  Changes:
+    - Replaced resource limit by one slider
+    - Simplified resource search to scan faster
+    - Show resources list with a progressbar and ordered
+---------------------------------------------------------------------------------------------------
 Version: 0.4.3
 Date: 2023-03-23
   Features:

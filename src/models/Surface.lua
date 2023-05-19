@@ -111,11 +111,13 @@ end
 
 ---Get Patchs
 ---@return { [uint]: uint }
-function Surface.get_patch_ids()
+function Surface.get_patch_ids(filter)
     if cache_surface.patchs == nil then cache_surface.patchs = {} end
     local ids = {}
     for patch_id, patch in pairs(cache_surface.patchs) do
-        table.insert(ids, patch_id)
+        if filter == nil or filter == "" or patch.name == filter then
+            table.insert(ids, patch_id)
+        end
     end
     return ids
 end
@@ -206,6 +208,36 @@ end
 function Surface.remove_marker(force, tag_number)
     local markers = Surface.get_markers(force);
     markers[tag_number] = nil
+end
+
+---Get slider value
+---@param force LuaForce
+---@return integer
+function Surface.get_slider_value(force)
+    local force_data = Surface.get_force_data(force)
+    if force_data.slider_value == nil then force_data.slider_value = 2 end
+    return force_data.slider_value
+end
+
+---Set slider value
+---@param force LuaForce
+---@param slider_value integer
+---@return integer
+function Surface.set_slider_value(force, slider_value)
+    local force_data = Surface.get_force_data(force)
+    force_data.slider_value = slider_value
+    return force_data.slider_value
+end
+
+---Convert slider value to limit
+---@param slider_value integer
+---@return integer
+function Surface.convert_slider_value(slider_value)
+    local value = 0
+    if slider_value > 0 then
+        value = 1000 * 10 ^ slider_value
+    end
+    return value
 end
 
 ---Get settings
@@ -364,8 +396,11 @@ end
 function Surface.update_markers(force, surface)
     local patchs = Surface.get_patchs()
     for _, patch in pairs(patchs) do
+        local slider_value = Surface.get_slider_value(force)
+        local limit_value = Surface.convert_slider_value(slider_value)
         local setting = Surface.get_setting(force, patch.name)
-        if setting.show == true and patch.amount >= setting.limit then
+        --if setting.show == true and patch.amount >= setting.limit then
+        if setting.show == true and patch.amount >= limit_value then
             Surface.update_patch_tag(force, surface, patch)
         else
             Surface.remove_patch_tag(force, surface, patch)

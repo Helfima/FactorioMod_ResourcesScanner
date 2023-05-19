@@ -236,7 +236,7 @@ module.action_scan = function(parameters)
     if parameters.index == nil then parameters.index = 1 end
     -- load resources
     if parameters.index <= #parameters.chunks then
-        local step = 1
+        local step = User.get_mod_global_setting("rs_scan_step_by_tick")
         module.get_chunks_patchs(parameters, step)
         if parameters.percent == nil then parameters.percent = 0 end
         local ratio = parameters.index / #parameters.chunks
@@ -260,14 +260,14 @@ end
 module.action_refresh = function(parameters)
 
     if parameters.patch_ids == nil then
-        parameters.patch_ids = Surface.get_patch_ids()
+        parameters.patch_ids = Surface.get_patch_ids(parameters.event.item1)
     end
 
     if parameters.index == nil then parameters.index = 1 end
 
     -- refresh resources
     if parameters.index <= #parameters.patch_ids then
-        local step = 1
+        local step = User.get_mod_global_setting("rs_scan_step_by_tick")
         module.refresh_patchs(parameters, step)
         if parameters.percent == nil then parameters.percent = 0 end
         local ratio = parameters.index / #parameters.patch_ids
@@ -352,7 +352,7 @@ module.get_chunks_patchs = function(parameters, step)
         local chunk = parameters.chunks[i]
         if chunk == nil then break end -- loop finished
         --log(string.format("******* Loop tick=%s index=%s *******", game.tick, i))
-        local patchs = module.get_chunk_patchs(chunk, surface)
+        local patchs = module.get_chunk_patchs2(chunk, surface)
     end
 end
 
@@ -445,6 +445,38 @@ module.get_chunk_patchs = function(chunk, surface)
                     end
                 end
             end
+        end
+    end
+    module.try_merge_patchs(chunk)
+    return patchs
+end
+
+---Scan a chunk
+---@param chunk ChunkData
+---@param surface LuaSurface
+---@return {[uint]:PatchData}
+module.get_chunk_patchs2 = function(chunk, surface)
+    --log(string.format("======== Analyse Chunk %s,%s ========", chunk.x, chunk.y))
+    local patchs = {}
+    local resources = surface.find_entities_filtered({ area = chunk.area, type = "resource" })
+    if #resources > 0 then
+        -- memorise le chunk sinon ca ne fonctionnera pas
+        Surface.add_chunk(chunk)
+
+        for _, resource in pairs(resources) do
+            -- creation de la ressource
+            local new_resource = Resource.create(resource)
+            if patchs[resource.name] == nil then
+                Surface.add_resource_name(resource.name)
+                local new_patch = Patch.create(resource)
+                Patch.add_in_patch(new_patch, new_resource)
+                patchs[resource.name] = new_patch
+                Patch.add_in_chunk(new_patch, chunk)
+            else
+                local new_patch = patchs[resource.name]
+                Patch.add_in_patch(new_patch, new_resource)
+            end
+            
         end
     end
     module.try_merge_patchs(chunk)
