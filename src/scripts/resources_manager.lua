@@ -62,8 +62,8 @@ module.get_parameter = function(event)
 end
 
 module.append_queue = function(parameters)
-    if global.queue == nil then global.queue = {} end
-    local queue = global.queue
+    if storage.queue == nil then storage.queue = {} end
+    local queue = storage.queue
     local force_id = parameters.force_id
     local surface_id = parameters.surface_id
     if queue[force_id] == nil then queue[force_id] = {} end
@@ -96,7 +96,7 @@ end
 
 module.on_nth_tick = {}
 module.on_nth_tick[1] = function(event)
-    local queue = global.queue
+    local queue = storage.queue
     if queue == nil then return end
     for force_id, surfaces in pairs(queue) do
         if surfaces ~= nil then
@@ -115,7 +115,7 @@ module.on_nth_tick[1] = function(event)
         end
     end
     if #queue == 0 then
-        global.queue = nil
+        storage.queue = nil
     end
 end
 
