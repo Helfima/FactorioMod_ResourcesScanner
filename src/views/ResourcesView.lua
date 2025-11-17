@@ -111,16 +111,18 @@ function ResourcesView:update_resources(event)
     local list_panel = GuiElement.add(scroll, GuiTable("list"):column(4):style("helfima_lib_table_default"))
     list_panel.style.cell_padding = 2
 
+    local style_sort_checkbox_inactive = "helfima_lib_sort_checkbox_inactive"
+    local style_sort_checkbox = "helfima_lib_sort_checkbox"
     local col1 = GuiElement.add(list_panel,
-        GuiCheckBox("label", "column", 1):style("helmod_sort_checkbox_inactive"):state(false):caption({ "ResourcesScanner.resource" }))
+        GuiCheckBox("label", "column", 1):style(style_sort_checkbox_inactive):state(false):caption({ "ResourcesScanner.resource" }))
     col1.style.margin = 5
     
     local sorter = function(t, a, b) return t[b].amount < t[a].amount end
 
-    local quantity_style = "helmod_sort_checkbox_inactive"
+    local quantity_style = style_sort_checkbox_inactive
     local quantity_state = false
     if column_sorted.name == "quantity" then
-        quantity_style = "helmod_sort_checkbox"
+        quantity_style = style_sort_checkbox
         quantity_state = column_sorted.state
         if quantity_state == false then
             sorter = function(t, a, b) return t[b].amount > t[a].amount end
@@ -129,10 +131,10 @@ function ResourcesView:update_resources(event)
     GuiElement.add(list_panel,
         GuiCheckBox(self.classname, "sort-column", "quantity"):style(quantity_style):state(quantity_state):caption({ "ResourcesScanner.quantity" }))
     
-    local distance_style = "helmod_sort_checkbox_inactive"
+    local distance_style = style_sort_checkbox_inactive
     local distance_state = true
     if column_sorted.name == "distance" then
-        distance_style = "helmod_sort_checkbox"
+        distance_style = style_sort_checkbox
         distance_state = column_sorted.state
         sorter = function(t, a, b) return get_distance(t[b]) > get_distance(t[a]) end
         if distance_state == true then
@@ -142,7 +144,7 @@ function ResourcesView:update_resources(event)
     GuiElement.add(list_panel,
         GuiCheckBox(self.classname, "sort-column", "distance"):style(distance_style):state(distance_state):caption({ "ResourcesScanner.distance-from-origin" }))
     GuiElement.add(list_panel,
-        GuiCheckBox("label", "column", 4):style("helmod_sort_checkbox_inactive"):state(false):caption({ "ResourcesScanner.action" }))
+        GuiCheckBox("label", "column", 4):style(style_sort_checkbox_inactive):state(false):caption({ "ResourcesScanner.action" }))
 
     for _, patch in spairs(patchs, sorter) do
         if patch.name == resource.name then
